@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  /* Registra Roboto como la fuente sans por defecto de Tailwind v4 */
+  --font-sans: "Roboto", sans-serif;
+}
+
+/* --- ESTILOS GENERALES Y PERSONALIZADOS --- */
+
+body {
+    background-color: #eeecec;
+    font-family: 'Roboto', sans-serif; /* Resguardo para navegadores antiguos */
+}
+
+/* Oculta la barra de scroll nativa para que se vea limpio pero mantenga la física de arrastre */
+.scrollbar-none::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* 1. Convertir los puntos (dots) en barras horizontales */
+.ant-carousel .slick-dots li {
+  width: 25px; /* Ancho de la rayita */
+  height: 4px;
+}
+
+.ant-carousel .slick-dots li button {
+  height: 100%;
+  border-radius: 2px;
+  background: #fff; /* Color de la barra */
+  opacity: 0.4;     /* Transparencia por defecto */
+}
+
+/* 2. Resaltar la barra activa */
+.ant-carousel .slick-dots li.slick-active button {
+  opacity: 1;
+}
+
+/* 3. Asegurar que el modal no tenga scroll innecesario */
+.ant-carousel {
+  width: 100%;
+}

@@ -1,23 +1,77 @@
-<!doctype html>
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<meta name="viewport" content="width=device-width" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro Basics</title>
-	</head>
-	<body>
-		<slot />
-	</body>
-</html>
+---
+import '../styles/global.css';
+import Navbar from '../components/Navbar.jsx'; // Ajusta la ruta si es diferente
+import Footer from '../components/Footer.jsx';   // Ajusta la ruta si es diferente
 
-<style>
-	html,
-	body {
-		margin: 0;
-		width: 100%;
-		height: 100%;
-	}
-</style>
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+}
+
+const {
+  title = "Inmobiliaria Sonia Flores | Propiedades en Jujuy",
+  description = "Encontrá tu próximo hogar en San Salvador de Jujuy. Alquiler y venta de casas, departamentos, terrenos y locales comerciales. Martillera Sonia Flores MP 177.",
+  image = "/SoniaLogo.png"
+} = Astro.props;
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'https://inmobiliariasoniaflores.com');
+const fullImageUrl = image.startsWith('http') ? image : new URL(image, canonicalURL).href;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <!-- ... todo tu head queda igual ... -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/SoniaLogo.png" />
+    <meta name="generator" content={Astro.generator} />
+
+    <!-- SEO Básico -->
+    <title>{title}</title>
+    <meta name="title" content={title} />
+    <meta name="description" content={description} />
+    <meta name="keywords" content="inmobiliaria jujuy, alquileres en jujuy, alquiler de casa jujuy, venta de propiedades jujuy, sonia flores, terrenos jujuy, san salvador de jujuy" />
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content="Inmobiliaria Sonia Flores" />
+
+    <!-- Geo Localización -->
+    <meta name="geo.region" content="AR-Y" />
+    <meta name="geo.placename" content="San Salvador de Jujuy" />
+    <meta name="geo.position" content="-24.1857;-65.3001" />
+    <meta name="ICBM" content="-24.1857, -65.3001" />
+
+    <!-- Open Graph / WhatsApp / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Inmobiliaria Sonia Flores" />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={fullImageUrl} />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={canonicalURL} />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={description} />
+    <meta property="twitter:image" content={fullImageUrl} />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap" rel="stylesheet" />
+  </head>
+  <body class="bg-[#eeecec] font-sans antialiased">
+    <!-- Navbar siempre presente -->
+    <Navbar client:load />
+
+    <!-- Contenido de cada página -->
+    <main>
+      <slot />
+    </main>
+
+    <!-- Footer siempre presente -->
+    <Footer client:load />
+  </body>
+</html>

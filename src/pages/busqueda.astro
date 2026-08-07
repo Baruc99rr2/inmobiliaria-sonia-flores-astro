@@ -1,0 +1,14 @@
+---
+import Layout from '../layouts/Layout.astro';
+import AppWrapper from '../components/AppWrapper.jsx';
+import Busqueda from '../components/Busqueda/Busqueda.jsx';
+
+const title = "Búsqueda de Propiedades - Inmobiliaria Sonia Flores";
+const description = "Encontrá casas, departamentos, terrenos y locales comerciales en San Salvador de Jujuy. Filtrá por precio, barrio y tipo de propiedad.";
+---
+
+<Layout title={title} description={description}>
+  <AppWrapper client:load>
+    <Busqueda client:only="react" />
+  </AppWrapper>
+</Layout>

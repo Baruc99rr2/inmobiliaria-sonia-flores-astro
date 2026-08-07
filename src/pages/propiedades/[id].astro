@@ -1,0 +1,37 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductDetailsReact from '../../components/ProductDetailsReact.jsx';
+import { productsData } from '../../data';
+
+export function getStaticPaths() {
+  return productsData.map((product) => ({
+    params: { id: product.id.toString() },
+    props: { product },
+  }));
+}
+
+const { product } = Astro.props;
+
+if (!product) {
+  return Astro.redirect('/404');
+}
+
+const siteOrigin = Astro.url.origin;
+const currentUrl = Astro.url.href;
+const imagesList = product.images || [product.image];
+const mainImageRaw = imagesList[0];
+const mainImage = mainImageRaw?.startsWith('http')
+  ? mainImageRaw
+  : `${siteOrigin}${mainImageRaw}`;
+
+const pageTitle = `${product.name} - ${product.detalles?.barrio || 'Jujuy'}`;
+---
+
+<Layout
+  title={pageTitle}
+  description={product.description}
+  image={mainImage}
+  url={currentUrl}
+>
+  <ProductDetailsReact client:only="react" product={product} currentUrl={currentUrl} />
+</Layout>
