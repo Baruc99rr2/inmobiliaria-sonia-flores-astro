@@ -42,7 +42,7 @@ export const productsData = [
         '/propiedades/casa-belgrano-alquiler.mp4',
         '/propiedades/casa-belgrano-alquiler2.mp4',
         ],
-        name: 'CASA en Calle Belgrano en Barrio Centro',
+        name: '(ALQUILADA)CASA en Calle Belgrano en Barrio Centro',
         price: "A consultar", // Al estar en 0, mostrará 'A consultar' gracias a tu lógica
         category: 'Alquiler',
         description: 'Excelente casa de dos plantas en calle Belgrano. Cuenta con recibidor, living comedor, cocina, patio, cochera y habitación de servicio. En planta alta dispone de 3 dormitorios (uno con vestidor, uno con balcón y otro con placard) y baño completo.',
@@ -215,7 +215,7 @@ export const productsData = [
           '/propiedades/departamentos-pasaje-alquiler.png', 
           '/propiedades/departamento-pasaje-alquila.mp4', 
         ],
-        name: 'Departamentos de 1 dormitorio en Pasaje El Tala Barrio Cuyaya',
+        name: '(ALQUILADA)Departamentos de 1 dormitorio en Pasaje El Tala Barrio Cuyaya',
         price: "400000",
         category: 'Alquiler',
         description: 'Departamento amplio y luminoso, ideal para una persona o pareja. Cuenta con un dormitorio, cocina comedor, baño y balcón. Excelente ubicación en Pasaje El Tala. \n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
