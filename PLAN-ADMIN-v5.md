@@ -21,7 +21,9 @@
 
 **Dinámica**: una fase por vez, informe al terminar, OK explícito antes de la siguiente.
 
-**Estado**: Fase 0 ✅ completada (ver `INFORME-FASE-0.md`). Siguiente: Fase 0.5.
+**Estado**: Fases 0 y 0.5 ✅ completadas (ver `INFORME-FASE-0.md`). Siguiente: Fase 0.6 (formulario de contacto), después Fase 1.
+
+**Fases**: 0, 0.5, 0.6, 1, 2, 3, 3.5, 4, 5, 6, 6.5, 7, 8, 8.5, 9.
 
 ---
 
@@ -456,7 +458,16 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...    # SOLO para scripts locales de migración
 
 **Fase 0 — ✅ COMPLETADA.** Ver `INFORME-FASE-0.md`.
 
-**Fase 0.5 — Limpieza.** §3. Rama aparte, orden estricto, build + preview tras cada commit.
+**Fase 0.5 — ✅ COMPLETADA.** §3. Nueve commits en `limpieza/ecommerce-residual`: 11 archivos borrados, 4 dependencias desinstaladas (−68 paquetes del árbol), build y recorrido verificados tras cada commit. El bundle JS quedó idéntico byte a byte porque nada de lo borrado estaba importado; el ahorro real fue −4,9 KB de CSS y el árbol de dependencias.
+
+**Fase 0.6 — Formulario de contacto.** Deuda técnica #1 del §12: hoy `Footer.jsx:20-25` solo hace `console.log` y un `alert`, así que **las consultas de clientes se pierden**. Va antes que Supabase porque es pérdida de negocio en curso y no depende de nada del panel.
+
+- El envío pasa por un endpoint propio, `src/pages/api/contacto.ts` con `export const prerender = false`, que reenvía a un servicio externo de formularios. **No se postea al servicio desde el cliente**: así la access key no viaja al browser y, sobre todo, la Fase 8.5 puede cambiar el destino sin volver a tocar `Footer.jsx`.
+- Manejo de error real: si el envío falla, el usuario ve el error. **Nunca un "gracias" falso.**
+- Estado de carga en el botón, honeypot anti-spam, credencial en variable de entorno sin prefijo `PUBLIC_`.
+- Sin dependencias nuevas de npm: alcanza con `fetch`.
+
+*Verificación: envío exitoso que llega al correo; envío forzado a fallar que muestra error y no limpia el formulario; envío con el honeypot lleno que se descarta.*
 
 **Fase 1 — Supabase + esquema.** Proyecto, migración SQL, catálogos semilla (con `legacy_label`), usuario de la dueña, `insert into admins`, signup público desactivado, bucket. *Verificación: `select public.is_admin()` correcto y las policies bloquean lo esperado.*
 
@@ -528,6 +539,51 @@ Después `npx shadcn@latest init`, `/admin/login`, guard, ícono discreto en el 
 
 **Fase 8 — Bloc de notas.** Editor por propiedad, autosave con debounce, timestamp, cartel "Estas notas son privadas". *Verificación: por Network, la tabla no aparece en ninguna respuesta pública.*
 
+**Fase 8.5 — Consultas del formulario a Supabase.** La Fase 0.6 dejó el formulario de contacto andando contra un servicio externo de formularios. Acá las consultas pasan a vivir en la base, y la dueña las ve desde el panel en vez de depender del correo.
+
+```sql
+create table public.contact_messages (
+  id uuid primary key default gen_random_uuid(),
+  nombre   text not null,
+  email    text not null,
+  telefono text not null default '',
+  ciudad   text not null default '',
+  asunto   text not null default '',
+  mensaje  text not null default '',
+
+  property_id uuid references public.properties(id) on delete set null,  -- si la consulta salió de una ficha
+
+  leido       boolean not null default false,
+  archivado   boolean not null default false,
+  user_agent  text,
+  created_at  timestamptz not null default now()
+);
+
+create index on public.contact_messages (archivado, created_at desc);
+
+alter table public.contact_messages enable row level security;
+
+-- anon SOLO puede insertar. No puede leer, editar ni borrar: sin policy de select
+-- para anon, un fetch desde el browser devuelve vacío aunque adivine la tabla.
+create policy "cualquiera puede enviar una consulta" on public.contact_messages
+  for insert to anon, authenticated with check (true);
+
+create policy "admin gestiona consultas" on public.contact_messages
+  for all to authenticated using (public.is_admin()) with check (public.is_admin());
+```
+
+Alcance:
+
+- El endpoint de la Fase 0.6 (`src/pages/api/contacto.ts`) cambia su cuerpo por un `insert` a `contact_messages`. **`Footer.jsx` no se vuelve a tocar**: sigue posteando al mismo endpoint. Ese es el motivo de haber puesto un endpoint propio en la Fase 0.6 en lugar de postear directo al servicio externo desde el cliente.
+- Bandeja en el panel: listado con no leídas primero, marcar leída/archivada, link `mailto:` y a WhatsApp con el teléfono.
+- Badge con el conteo de no leídas en el sidebar.
+- **Qué pasa con el servicio externo**: se define acá. Dos opciones, ambas válidas —
+  (a) **retirarlo** y quedarse solo con la base, o
+  (b) **dejarlo como respaldo**: el endpoint inserta en Supabase *y además* dispara el envío al servicio, de modo que la dueña siga recibiendo el aviso por mail sin tener que entrar al panel. Si el insert falla, el mail sigue saliendo, y viceversa.
+  Recomendado (b) mientras la dueña no tenga el hábito de abrir el panel a diario. El costo es mantener la cuota del servicio bajo control.
+
+*Verificación: enviar una consulta desde el sitio y confirmar que (1) aparece en la tabla, (2) se ve en el panel, y (3) un `select` anónimo desde el browser contra `contact_messages` devuelve vacío.*
+
 **Fase 9 — Cierre.** Borrar `data.jsx` y `categoryItem`; sacar `ShopContext.jsx` + simplificar `AppWrapper.jsx` con el protocolo de dos pasos; revisar bundle; instructivo con capturas para la dueña; credenciales en un gestor de contraseñas.
 
 ---
@@ -598,7 +654,7 @@ Tier gratuito: **1 GB**. Casi todas las propiedades tienen `.mp4`. Los videos ac
 
 | # | Hallazgo | Ubicación | Gravedad |
 |---|---|---|---|
-| 1 | **El formulario de contacto del footer no envía nada**: solo hace `console.log` y un `alert`. La dueña puede estar creyendo que le llegan consultas | `Footer.jsx:20-25` | 🔴 **Alta — pérdida de clientes** |
+| 1 | **El formulario de contacto del footer no envía nada**: solo hace `console.log` y un `alert`. La dueña puede estar creyendo que le llegan consultas | `Footer.jsx:20-25` | 🔴 **Alta — pérdida de clientes.** Se arregla en la **Fase 0.6** |
 | 2 | **El filtro de barrio devuelve 0 resultados** para 11 de 12 opciones | `SearchFilters.jsx:11-12`, `MobileFiltersModal.jsx:13-14` | 🔴 **Alta — pérdida de clientes** |
 | 3 | La id 12 muestra `"A consultar, A consultar, Jujuy, Argentina"` como dirección | `ProductDetailsReact.jsx:226-234` | 🟠 Media |
 | 4 | 10 propiedades muestran `a consultar m²` en minúscula pegado al ícono de superficie | `ProductList.jsx:87`, `PropertySearchCard.jsx:120` | 🟠 Media |
@@ -608,6 +664,8 @@ Tier gratuito: **1 GB**. Casi todas las propiedades tienen `.mp4`. Los videos ac
 | 8 | No existe página `/404`, pero `[id].astro:16` redirige ahí | `src/pages/` | 🟡 Baja |
 | 9 | Opción de orden "Antigüedad" que no ordena nada (el campo no existe en ninguna propiedad) | `Busqueda.jsx:114`, `SearchResultsHeader.jsx:30` | 🟡 Baja |
 | 10 | Orden por precio produce `NaN` con "A consultar" | `Busqueda.jsx:111-112` | 🟡 Baja |
-| 11 | Clave `pk_test_` de Stripe versionada en git (pública, sin riesgo real, queda en el historial) | `Cart.jsx:9` | 🟡 Baja |
+| 11 | Clave `pk_test_` de Stripe versionada en git (pública, sin riesgo real, queda en el historial) | `Cart.jsx:9` | 🟡 Baja — `Cart.jsx` borrado en la Fase 0.5; la clave queda en el historial |
 
-Los ítems 2 a 6, 8, 9 y 10 se resuelven dentro de las Fases 3 y 3.5. **Los ítems 1 y 7 quedan fuera del plan y hay que decidirlos con la dueña.**
+- El **ítem 1** entró al plan como **Fase 0.6** (arreglo inmediato contra un servicio externo) y se completa en la **Fase 8.5** (consultas en Supabase, visibles desde el panel).
+- Los ítems **2 a 6, 8, 9 y 10** se resuelven dentro de las Fases 3 y 3.5.
+- El **ítem 7** (el mail `baruc276@gmail.com` como contacto público de la inmobiliaria) sigue **fuera del plan y hay que decidirlo con la dueña**. Es el destinatario de las consultas de la Fase 0.6, así que conviene definirlo antes de que el formulario empiece a recibir tráfico real.
