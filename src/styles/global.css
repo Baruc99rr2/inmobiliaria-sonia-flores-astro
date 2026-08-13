@@ -17,24 +17,3 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-
-/* Estilos para Ant Design Carousel / Slick */
-.ant-carousel .slick-dots li {
-  width: 25px;
-  height: 4px;
-}
-
-.ant-carousel .slick-dots li button {
-  height: 100%;
-  border-radius: 2px;
-  background: #fff;
-  opacity: 0.4;
-}
-
-.ant-carousel .slick-dots li.slick-active button {
-  opacity: 1;
-}
-
-.ant-carousel {
-  width: 100%;
-}
