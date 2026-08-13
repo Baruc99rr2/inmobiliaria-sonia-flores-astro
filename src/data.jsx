@@ -16,8 +16,8 @@ export const productsData = [
         category: 'Alquiler',
         description: 'Cocina , comedor, dormitorio,  antebaño baño , balcón y cochera.',
         detalles: {
-            tipo: 'departamento',
-            barrio: 'Los Perales',
+            tipo: 'Departamento',
+            barrio: 'Barrio Los Perales',
             cocheras: 1,
             ambientes:2,
             calle: '',
@@ -42,13 +42,13 @@ export const productsData = [
         '/propiedades/casa-belgrano-alquiler.mp4',
         '/propiedades/casa-belgrano-alquiler2.mp4',
         ],
-        name: 'CASA en Calle Belgrano',
-        price: "0", // Al estar en 0, mostrará 'A consultar' gracias a tu lógica
+        name: 'CASA en Calle Belgrano en Barrio Centro',
+        price: "A consultar", // Al estar en 0, mostrará 'A consultar' gracias a tu lógica
         category: 'Alquiler',
         description: 'Excelente casa de dos plantas en calle Belgrano. Cuenta con recibidor, living comedor, cocina, patio, cochera y habitación de servicio. En planta alta dispone de 3 dormitorios (uno con vestidor, uno con balcón y otro con placard) y baño completo.',
         detalles: {
-            tipo: 'casa',
-            barrio: 'Centro',
+            tipo: 'Casa',
+            barrio: 'Barrio Centro',
             cocheras: 1,
             ambientes: 6, // Recibidor, Living Comedor, Cocina + 3 Dormitorios
             calle: 'Belgrano',
@@ -78,7 +78,7 @@ export const productsData = [
         category: 'Alquiler',
         description: 'Excelente salón comercial de 180m² en Palpalá con baño, patio y dos habitaciones. Ideal para gimnasio, estética, salón de fiestas, emprendimientos o vivienda. Zona de fácil acceso y estacionamiento.\n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
         detalles: {
-            tipo: 'local', // O 'salón' según cómo manejes tus tipos en el filtro
+            tipo: 'Local', // O 'salón' según cómo manejes tus tipos en el filtro
             barrio: 'Palpalá',
             cocheras: 0, // Se especifica zona de fácil estacionamiento afuera
             ambientes: 3, // El salón principal + las 2 habitaciones
@@ -116,7 +116,7 @@ export const productsData = [
         description: 'Excelente oficina ubicada en primer piso, con vista a la calle y emplazada en una zona céntrica. Ideal para estudios profesionales, consultorios u oficinas comerciales. Una excelente oportunidad de inversión, con opciones de entrega y financiación.',
         detalles: {
             tipo: 'Oficina',
-            barrio: 'Centro',
+            barrio: 'Barrio Centro',
             calle: 'Guemes y Necochea',
             numero: '',
             mostrarDireccionExacta: false,
@@ -124,7 +124,7 @@ export const productsData = [
             ambientes: 1,
             dormitorios: 0,
             banos: 1,
-            servicios: ['Agua Potable', 'Cloaca', 'Electricidad'],
+            servicios: ['Agua', 'Cloaca', 'Luz'],
             adicionales: [
             ],
             mapaQuery: 'Centro, San Salvador de Jujuy',
@@ -146,12 +146,12 @@ export const productsData = [
           '/propiedades/deposito-altocomedero-alquiler-i8.png',
         ],
         name: 'Depósitos/Galpónes de 640 m² frente a Ruta N° 9 en Alto Comedero',
-        price: "a consultar",
+        price: "A consultar",
         category: 'Alquiler',
         description: 'Excelente depósito a estrenar con ubicación estratégica y de alta visibilidad frente a la Ruta Nacional N° 9, en Barrio Alto Comedero. El predio cuenta con un total de 640 m² cubiertos, distribuidos en dos galpones modulares. Existe la opción de fragmentar el espacio para alquilar únicamente un solo sector de 320 m², adaptándose a la medida de tu negocio. Cada módulo cuenta con salón libre, baño, kitchenette y patio privado.',
         detalles: {
             tipo: 'Galpon',
-            barrio: 'Alto Comedero',
+            barrio: 'Barrio Alto Comedero',
             calle: 'Ruta Nacional N° 9',
             numero: '',
             mostrarDireccionExacta: false,
@@ -161,8 +161,8 @@ export const productsData = [
             ambientes: 1,
             banos: 1,
             expensas: 0,
-            servicios: ['Agua Potable', 'Cloaca', 'Electricidad', 'Pavimento'],
-            adicionales: ['A estrenar', 'Kitchenette', 'Patio', 'Frente a Ruta Nacional N° 9', 'Opción 600 m²'],
+            servicios: ['Agua', 'Cloaca', 'Luz', 'Pavimento'],
+            adicionales: ['A estrenar', 'Kitchenette', 'Patio', 'Frente a Ruta Nacional N° 9'],
             mapaQuery: 'Ruta Nacional 9, Alto Comedero, San Salvador de Jujuy',
             lat: -24.218112,
             lon: -65.272239,
@@ -202,7 +202,7 @@ export const productsData = [
             dormitorios: 1,
             banos: 1,
             expensas: 0,
-            servicios: ['Agua Potable', 'Cloaca', 'Electricidad', 'Pavimento',"gas"],
+            servicios: ['Agua', 'Cloaca', 'Luz', 'Pavimento',"Gas"],
             adicionales: ['Excelente ubicación', 'Cerca del Parque San Martín'],
             mapaQuery: 'Parque San Martín, San Salvador de Jujuy',
             lat: -24.182718,
@@ -216,12 +216,12 @@ export const productsData = [
           '/propiedades/departamento-pasaje-alquila.mp4', 
         ],
         name: 'Departamentos de 1 dormitorio en Pasaje El Tala Barrio Cuyaya',
-        price: 400000,
+        price: "400000",
         category: 'Alquiler',
         description: 'Departamento amplio y luminoso, ideal para una persona o pareja. Cuenta con un dormitorio, cocina comedor, baño y balcón. Excelente ubicación en Pasaje El Tala. \n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
         detalles: {
             tipo: 'Departamento',
-            barrio: 'Cuyaya',
+            barrio: 'Barrio Cuyaya',
             calle: 'Pasaje El Tala',
             numero: '',
             mostrarDireccionExacta: false,
@@ -230,7 +230,7 @@ export const productsData = [
             dormitorios: 1,
             banos: 1,
             expensas: 0,
-            servicios: ['Agua Potable', 'Cloaca', 'Electricidad', 'Pavimento',"gas"],
+            servicios: ['Agua', 'Cloaca', 'Luz', 'Pavimento',"Gas"],
             adicionales: ['Balcón', 'Amplio y luminoso', 'Ideal para una persona o pareja', 'Excelente ubicación'],
             mapaQuery: 'Pasaje El Tala, San Salvador de Jujuy',
             lat: -24.186500,
@@ -249,7 +249,7 @@ export const productsData = [
         category: 'Alquiler',
         description: 'Excelente oficina céntrica, ideal para profesionales (abogados, contadores, arquitectos, etc.). Cuenta con 2 salas de espera y opción de alquilar con o sin muebles. El precio incluye servicios (WiFi, etc.).\n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
         detalles: {
-            tipo: 'oficina',
+            tipo: 'Oficina',
             barrio: 'Barrio Centro',
             cocheras: 0,
             ambientes: 2, // Basado en las 2 salas de espera/oficinas
@@ -261,7 +261,7 @@ export const productsData = [
             superficie_m2: "a consultar",
             frente_m: "a consultar",
             fondo_m: "a consultar",
-            servicios: ['WiFi', 'Luz', 'Agua'], // Especificados en el anuncio
+            servicios: ['Wifi', 'Luz', 'Agua'], // Especificados en el anuncio
             adicionales: ['Opción amoblado', 'Salas de espera'],
             mapaQuery: 'Centro, San Salvador de Jujuy',
             lat: -24.1856, // Coordenadas aproximadas para el centro de San Salvador de Jujuy
@@ -275,7 +275,7 @@ export const productsData = [
           '/propiedades/departamento-losperales-alquila-n2.mp4', 
         ],
         name: 'Departamento de 2 dormitorios con excelente vista Barrio Los Perales',
-        price: 700000,
+        price: "700000",
         category: 'Alquiler',
         description: 'Departamento con living comedor, cocina, dos dormitorios, baño, lavadero y balcón. Se destaca por su excelente vista e iluminación natural. \n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
         detalles: {
@@ -289,7 +289,7 @@ export const productsData = [
             dormitorios: 2,
             banos: 1,
             expensas: 0,
-            servicios: ['Agua Potable', 'Cloaca', 'Electricidad', 'Pavimento',"gas"],
+            servicios: ['Agua', 'Cloaca', 'Luz', 'Pavimento',"Gas"],
             adicionales: ['Lavadero', 'Balcón', 'Excelente vista', 'Iluminación natural'],
             mapaQuery: 'San Salvador de Jujuy',
             lat: -24.185786,
@@ -301,7 +301,6 @@ export const productsData = [
         images: [
           '/propiedades/casa-chijra-venta.png', 
           '/propiedades/casa-chijra-venta.mp4', 
-          '/propiedades/tr3.jpg'
         ],
         name: 'Casa con departamento independiente a 30 m de Av. Mosconi Barrio Chijra',
         price: 'A consultar',
@@ -318,7 +317,7 @@ export const productsData = [
             dormitorios: 3,
             banos: 2,
             expensas: 0,
-            servicios: ['Agua Potable', 'Cloaca', 'Gas Natural', 'Electricidad', 'Pavimento'],
+            servicios: ['Agua', 'Cloaca', 'Gas', 'Luz', 'Pavimento'],
             adicionales: [
                 'Departamento con entrada independiente',
                 'Habitación de usos múltiples',
@@ -368,7 +367,7 @@ export const productsData = [
             '/propiedades/casa-santaana-alquiler.mp4',
         ],
         name: 'Amplia Casa de 3 Dormitorios',
-        price: 580000, // En número sin comillas para que funcione perfecto con tus formateadores de precio
+        price: "580000", // En número sin comillas para que funcione perfecto con tus formateadores de precio
         category: 'Alquiler',
         description: 'Excelente casa familiar en alquiler ubicada en estratégica zona cercana a la empresa Santa Ana, con rápido y fácil acceso al centro y líneas de transporte. La propiedad cuenta con un cómodo living, comedor independiente, cocina funcional, 3 amplios dormitorios, 2 baños completos y un lindo patio ideal para disfrutar al aire libre.\n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
         detalles: {
@@ -384,7 +383,7 @@ export const productsData = [
             superficie_m2: "a consultar", 
             frente_m: "a consultar",
             fondo_m: "a consultar",
-            servicios: ['Agua corriente', 'Luz eléctrica', 'Gas'],
+            servicios: ['Agua', 'Luz', 'Gas'],
             adicionales: ['Patio', 'Cercanía a colectivos', 'Excelente conectividad'],
             mapaQuery: 'Empresa Santa Ana, San Salvador de Jujuy, Jujuy', // Apunta el mapa a la zona de referencia
             lat: -24.190449, 
@@ -398,7 +397,7 @@ export const productsData = [
             '/propiedades/local-brown-alquiler.mp4', 
         ],
         name: 'Amplio Salón Comercial en Calle Almirante Brown',
-        price: "a consultar",
+        price: "A consultar",
         category: 'Alquiler',
         description: 'Excelente salón comercial estratégicamente ubicado sobre la calle Almirante Brown al 800, ideal para empresas automotoras o venta de productos de gran porte, zona de alto flujo.\n\nLa propiedad dispone de un amplio salón principal, oficina de gran tamaño, oficina secundaria, kitchenette, baño y antebaño.',
         detalles: {
@@ -414,7 +413,7 @@ export const productsData = [
             superficie_m2: 'a consultar', 
             frente_m: 'a consultar',
             fondo_m: 'a consultar',
-            servicios: ['Agua corriente', 'Luz eléctrica'],
+            servicios: ['Agua', 'Luz'],
             adicionales: ['Salón principal amplio', 'Oficina grande', 'Oficina chica', 'Kitchenette', 'Antebaño', 'Ubicación comercial estratégica'],
             mapaQuery: 'Almirante Brown 800, San Salvador de Jujuy, Jujuy',
             lat: -24.198048, 
@@ -428,7 +427,7 @@ export const productsData = [
             '/propiedades/nave-sanpedrito-alquiler/nave-sanpedrito-alquiler.mp4'
         ],
         name: 'Amplia Nave Industrial en San Pedrito por Avenida 2 de Abril',
-        price: 0,
+        price: "A consultar",
         category: 'Alquiler',
         description: 'Excelente nave versátil con posibilidad de subdividirse en 2, 3 o 4 módulos según la necesidad del emprendimiento. Ubicación estratégica sobre rotonda antes de llegar a Río Blanco, ideal para corralones, depósitos, empresas constructoras o venta de materiales de todo tipo.',
         detalles: {
@@ -444,7 +443,7 @@ export const productsData = [
             superficie_m2: 'a consultar', 
             frente_m: 'a consultar',
             fondo_m: 'a consultar',
-            servicios: ['Agua corriente'], 
+            servicios: ['Agua'], 
             adicionales: ['Posibilidad de subdivisión (2, 3 o 4 módulos)', 'Apto corralón', 'Apto depósito', 'Excelente acceso para logística', 'Ubicación en rotonda'],
             mapaQuery: 'San Pedrito, Jujuy',
             lat: -24.219350, 
@@ -458,7 +457,7 @@ export const productsData = [
             '/propiedades/casa-gorriti-alquiler/gorriti-casa-alquiler.mp4'
         ],
         name: 'Departamento con 2 Dormitorios en Barrio Gorriti',
-        price: 620000,
+        price: "620000",
         category: 'Alquiler',
         description: 'Cómodo departamento ubicada en Barrio Gorriti, a metros de la intersección de calle Uriondo y Juana Manuela Gorriti. Cuenta con dos dormitorios, living, comedor, cocina, lavadero y baño, ideal para familias que buscan una excelente ubicación y ambientes funcionales. \n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
         detalles: {
@@ -494,7 +493,7 @@ export const productsData = [
             '/propiedades/centro-departamento-alquiler/centro-departamento-alquiler.mp4'
         ],
         name: 'Departamento de 1 Dormitorio en Barrio Centro',
-        price: 'a consultar',
+        price: 'A consultar',
         category: 'Alquiler',
         description: 'Amplio y luminoso departamento ubicado sobre calle Belgrano en pleno Barrio Centro. Cuenta con cocina, comedor, un dormitorio y baño completo. Posee acceso a todos los servicios básicos, ideal para quienes buscan comodidad y excelente ubicación céntrica.\n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
         detalles: {
@@ -511,12 +510,12 @@ export const productsData = [
             frente_m: 'a consultar',
             fondo_m: 'a consultar',
             servicios: [
-                'Agua Potable',
-                'Electricidad',
-                'Gas Natural',
+                'Agua',
+                'Luz',
+                'Gas',
                 'Cloaca',
                 'Pavimento',
-                'Internet'
+                'Wifi'
             ],
             adicionales: [
                 'Comedor',
@@ -537,7 +536,7 @@ export const productsData = [
             '/propiedades/departamento-losperales-alquiler/departamento-losperales-alquilervideofinal.mp4'
         ],
         name: 'Departamento de 2 Dormitorios en Barrio Los Perales',
-        price: 'a consultar',
+        price: 'A consultar',
         category: 'Alquiler',
         description: 'Hermoso y pintoresco departamento de 2 dormitorios ubicado en Barrio Los Perales, a metros de la Av. Illia.\n\nCuenta con living-comedor integrado muy amplio y luminoso, cocina funcional, antebaño, baño completo y balcón. Además, el edificio dispone de terraza con asador y cochera.\n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
         detalles: {
@@ -554,12 +553,12 @@ export const productsData = [
             frente_m: 'a consultar',
             fondo_m: 'a consultar',
             servicios: [
-                'Agua Potable',
-                'Electricidad',
-                'Gas Natural',
+                'Agua',
+                'Luz',
+                'Gas',
                 'Cloaca',
                 'Pavimento',
-                'Internet'
+                'Wifi'
             ],
             adicionales: [
                 'Living Comedor',
@@ -584,12 +583,12 @@ export const productsData = [
                 '/propiedades/local-palpala-alquiler/local-palpala-alquiler1.jpg',
                 '/propiedades/local-palpala-alquiler/local-palpala-alquiler.mp4'
             ],
-            name: 'Locales Comerciales sobre Av. Libertad en Palpala',
+            name: 'Local/locales Comerciales sobre Av. Libertad en Palpala',
             price: '200000',
             category: 'Alquiler',
             description: 'Inmobiliaria Sonia Flores alquila locales comerciales sobre Avenida Libertad al 200, Palpalá. Ideales para emprender o expandir tu negocio en una zona de constante tránsito.\n\nPrecios desde $200.000.\n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.\n\n📞 Para más información comunicarse al 3884881245 de 9 a 13 y de 16 a 18 hs.\nMartillera Sonia Flores MP 177.',
             detalles: {
-                tipo: 'Local Comercial',
+                tipo: 'Local',
                 barrio: 'Palpalá',
                 cocheras: 0,
                 ambientes: 1,
@@ -602,8 +601,8 @@ export const productsData = [
                 frente_m: 'a consultar',
                 fondo_m: 'a consultar',
                 servicios: [
-                    'Agua Potable',
-                    'Electricidad',
+                    'Agua',
+                    'Luz',
                     'Cloaca',
                     'Pavimento'
                 ],
