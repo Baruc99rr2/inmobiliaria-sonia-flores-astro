@@ -133,6 +133,76 @@ Ahora:
 
 ---
 
+## 3.bis El 500 del preview: qué era en realidad
+
+> Esta sección se agregó después del primer push, al investigar el 500 que apareció en el
+> preview de Vercel.
+
+### No era un import faltante
+
+La hipótesis inicial fue que `index.astro` tenía `import { getPublishedProducts, }` con
+`CACHE_CONTROL` sin importar y una coma suelta. **No es el caso.** En el commit pusheado
+(`5c3fdbd`), en el working tree y en `origin`, la línea es:
+
+```js
+import { getPublishedProducts, CACHE_CONTROL } from '../lib/properties';
+```
+
+Lo confirmé con `git show`, con `git diff` contra `origin` y con el typecheck, que no
+reporta ningún identificador sin definir en las tres páginas.
+
+### Lo que sí era: un `throw` mío a nivel de módulo
+
+`src/lib/supabase-server.ts` hacía esto al importarse:
+
+```ts
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Faltan PUBLIC_SUPABASE_URL o PUBLIC_SUPABASE_ANON_KEY...');
+}
+```
+
+Ese `throw` ocurre **al importar el módulo**, o sea antes de que corra una sola línea de la
+página. El `try`/`catch` y el fallback que escribí nunca llegaban a ejecutarse. Resultado:
+**500 en las tres rutas**, en lugar de degradar a `data.jsx`.
+
+Es exactamente lo contrario de lo que el fallback existe para evitar, y contradice lo que
+afirmé en el informe anterior: *"el sitio nunca se queda sin propiedades"*. Con las
+variables ausentes, se quedaba sin sitio.
+
+### Cómo lo reproduje
+
+El error **no aparece con `astro dev`**, que es con lo que yo había verificado la fase.
+Tuve que correr el bundle serverless real. El adapter de Vercel emite un handler
+web-standard en `.vercel/output/functions/_render.func/dist/server/entry.mjs`, que se
+puede invocar directo:
+
+```js
+import entry from './dist/server/entry.mjs';
+const res = await entry.fetch(new Request('https://www.inmobiliariasoniaflores.com/'));
+```
+
+Cuatro escenarios, antes y después del arreglo:
+
+| # | Build | Runtime | Antes | Después |
+|---|---|---|---|---|
+| A | con claves | con claves | 200 | 200 |
+| B | con claves | sin claves | 200 | 200 |
+| C | **sin claves** | **sin claves** | 🔴 **500** | ✅ 200 + fallback |
+| D | sin claves | con claves | 200 | 200 |
+
+El escenario **C** es el que rompía. **D** es el caso que mencionás del build cacheado, y
+funciona porque `supabase-server.ts` lee `import.meta.env.X ?? process.env.X`: aunque Vite
+haya inlineado `undefined` en el build, en el servidor `process.env` las levanta en
+runtime.
+
+### El arreglo
+
+Ni `supabase-server.ts` ni `supabase.ts` tiran ya. Si faltan las credenciales, el cliente
+queda en `null`, se loguea un error explícito, y `properties.ts` lo trata como una
+consulta fallida. El sitio sirve `data.jsx` y sigue en pie.
+
+---
+
 ## 4. Comportamiento con Supabase caído
 
 Lo probé de verdad, levantando el dev server con una URL de Supabase inexistente.
@@ -213,6 +283,56 @@ un bug de esta fase.
 
 ---
 
+## 6.bis Por qué el build pasó en verde con un error de runtime
+
+**Porque `astro build` no hace typecheck, y porque el error no era de tipos.**
+
+Las dos mitades de la respuesta:
+
+**1. No había typecheck.** `typescript` no estaba instalado, así que ni `astro build` ni
+nada más miraba los `.ts` y los `.astro`. `astro build` compila y empaqueta: no verifica
+tipos ni identificadores no declarados. Esto ya lo había anotado en `INFORME-FASE-2.md`
+§6, y quedó pendiente.
+
+Ahora está instalado y **`npm run check` da 0 errores**. Al correrlo por primera vez
+encontró 4 errores reales que el build venía ignorando:
+
+| Archivo | Error |
+|---|---|
+| `supabase-server.ts:26,28` | `Cannot find name 'process'` — faltaba `@types/node` |
+| `index.astro:36` | `LoadingScreen` requería `onFinish`, que nunca se le pasaba |
+| `index.astro:37` | `Homepage` requería `onVideoLoaded`, ídem |
+
+Los tres están arreglados. Los dos de `index.astro` **son anteriores a esta fase**.
+
+Dos cosas que costaron para dejarlo andando, y conviene que queden anotadas:
+
+- **`typescript@7` no sirve todavía.** `astro check` falla con *"The TypeScript module
+  loaded (found 7.0.2) does not expose the programmatic API that `astro check` relies
+  on"*. Hay que quedarse en **`typescript@^6`** hasta que Astro lo soporte
+  ([roadmap#1321](https://github.com/withastro/roadmap/discussions/1321)).
+- Hizo falta `"types": ["node"]` en `tsconfig.json` para que reconozca `process`.
+
+**2. Pero el typecheck NO habría atrapado este bug.** Esto es lo importante: un `throw`
+condicional a nivel de módulo es código perfectamente válido y bien tipado. Ninguna
+herramienta de tipos lo marca. Lo que lo atrapa es **ejecutar el bundle de producción sin
+las variables de entorno**, que es lo que no hice en la primera pasada: verifiqué con
+`astro dev`, donde el `.env` local siempre estaba presente.
+
+O sea que sirven las dos cosas, y ninguna reemplaza a la otra:
+
+- El typecheck habría atrapado el `ReferenceError` que vos suponías, y de hecho atrapó
+  otros 4 problemas reales.
+- Solo probar el bundle real con el entorno degradado atrapa esto.
+
+**Mi recomendación sobre la Fase 3.9**: ya la adelanté en lo esencial —`typescript@^6`,
+`@astrojs/check`, `@types/node`, script `npm run check`, 0 errores— porque contestar tu
+pregunta requería instalarlo igual. Lo que **no** hice, y sigue pendiente, es meterlo en
+el pipeline: correr `check` en el build o en CI para que no vuelva a acumularse deuda. Eso
+sí conviene resolverlo antes de la 3.5.
+
+---
+
 ## 7. Dos cosas menores que aparecieron
 
 **La canónica de `/busqueda` perdió la barra final.** En el build estático era
@@ -249,3 +369,21 @@ mirá la ficha **`/propiedades/19`** o filtrá por **Chijra**: las dos cosas fun
 Cache-Control: public, s-maxage=60, stale-while-revalidate=300   -> lee de Supabase
 Cache-Control: public, max-age=0, must-revalidate                -> está en fallback
 ```
+
+### Cuidado con el build cacheado de Vercel
+
+Las variables `PUBLIC_*` de Astro **se incrustan en tiempo de build**: Vite reemplaza cada
+`import.meta.env.PUBLIC_X` por su valor literal al compilar. Un redeploy que reutilice una
+build cacheada vuelve a publicar el bundle viejo, **compilado sin las claves**, aunque las
+variables ya estén cargadas en el proyecto.
+
+En este proyecto eso **no rompe el servidor**, porque `supabase-server.ts` lee
+`import.meta.env.X ?? process.env.X` y Vercel inyecta las variables en el runtime de la
+función: es el escenario D de §3.bis y da 200. Pero hay dos consecuencias que sí importan:
+
+1. **En el cliente no hay red de contención.** `supabase.ts` (que hoy no usa nadie, pero
+   va a usar la Fase 4) corre en el browser, donde `process.env` no existe. Si el bundle
+   se compiló sin las claves, ese cliente queda en `null` y no hay forma de recuperarlo en
+   runtime. **Para la Fase 4, un redeploy con caché sí puede romper el login.**
+2. Ante cualquier duda, **redeploy sin caché** ("Redeploy" destildando *Use existing Build
+   Cache*), que es la única forma de garantizar que las variables quedaron incrustadas.

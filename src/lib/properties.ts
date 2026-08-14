@@ -29,6 +29,10 @@ export type Catalogos = {
  * Devuelve `null` si la consulta falla, para que la página use el fallback.
  */
 export async function getPublishedProducts() {
+  // Sin credenciales no hay cliente. Se trata igual que una consulta fallida:
+  // la página cae al fallback en vez de reventar con 500.
+  if (!supabaseServer) return null;
+
   const { data, error } = await supabaseServer
     .from('properties')
     .select(PROPERTY_SELECT)
@@ -61,6 +65,9 @@ export async function getPublishedProducts() {
  * estaría diciendo al buscador que las propiedades dejaron de existir.
  */
 export async function getProductByLegacyId(legacyId: number) {
+  // Sin credenciales: no es un 404, es una falla. Que caiga al fallback.
+  if (!supabaseServer) return { ok: false, product: null };
+
   const { data, error } = await supabaseServer
     .from('properties')
     .select(PROPERTY_SELECT)
@@ -87,6 +94,8 @@ export async function getProductByLegacyId(legacyId: number) {
  * las propiedades que tenga a mano.
  */
 export async function getCatalogos(): Promise<Catalogos | null> {
+  if (!supabaseServer) return null;
+
   const [locs, barrios, tipos] = await Promise.all([
     supabaseServer.from('localidades').select('slug, label').eq('active', true).order('label'),
     supabaseServer

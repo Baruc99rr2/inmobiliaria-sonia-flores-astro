@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const LoadingScreen = ({ onFinish }) => {
+const LoadingScreen = ({ onFinish = undefined }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
   const [progress, setProgress] = useState(0);
