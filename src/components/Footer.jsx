@@ -6,22 +6,85 @@ import SoniaLogo from '../assets/SoniaLogo.png';
 // Extraemos la URL en string (.src) del objeto que genera Astro
 const logoUrl = SoniaLogo?.src || SoniaLogo;
 
+// Solución puente (Fase 0.6). Se retira entera en la Fase 8.5, cuando el formulario
+// pase a escribir en la tabla contact_messages de Supabase.
+//
+// La access key de Web3Forms es pública por diseño: ellos documentan que "no es una
+// API key secreta" y que va dentro del <form>. Por eso lleva prefijo PUBLIC_.
+// El DESTINATARIO no se configura acá: está atado a la key, y se cambia desde el
+// panel de Web3Forms (hoy va a baruc276@gmail.com).
+const WEB3FORMS_ACCESS_KEY = import.meta.env.PUBLIC_WEB3FORMS_ACCESS_KEY;
+
+const ESTADO_INICIAL = {
+  nombre: '', email: '', telefono: '', ciudad: '', asunto: '', mensaje: ''
+};
+
 const Footer = () => {
   const DEGRADEZ_CONFIG = { rojoIntensidad: "rgba(214, 69, 49, 1)" };
 
-  const [formData, setFormData] = useState({
-    nombre: '', email: '', telefono: '', ciudad: '', asunto: '', mensaje: ''
-  });
+  const [formData, setFormData] = useState(ESTADO_INICIAL);
+  const [enviando, setEnviando] = useState(false);
+  const [resultado, setResultado] = useState(null); // { ok: boolean, texto: string }
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Estructurando correo profesional para baruc276@gmail.com:", formData);
-    alert(`¡Gracias ${formData.nombre}! Tu solicitud de "${formData.asunto}" ha sido enviada con éxito.`);
-    setFormData({ nombre: '', email: '', telefono: '', ciudad: '', asunto: '', mensaje: '' });
+    if (enviando) return;
+
+    // Honeypot: si viene con contenido, es un bot. Cortamos sin avisarle nada.
+    // Web3Forms además valida "botcheck" de su lado.
+    if (e.target.botcheck?.checked) return;
+
+    if (!WEB3FORMS_ACCESS_KEY) {
+      setResultado({
+        ok: false,
+        texto: 'El formulario no está configurado. Escribinos por teléfono o por WhatsApp al 388 54881245.'
+      });
+      return;
+    }
+
+    setEnviando(true);
+    setResultado(null);
+
+    try {
+      const respuesta = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          access_key: WEB3FORMS_ACCESS_KEY,
+          subject: `Consulta web: ${formData.asunto || 'sin asunto'} — ${formData.nombre}`,
+          from_name: 'Web Inmobiliaria Sonia Flores',
+          ...formData
+        })
+      });
+
+      const datos = await respuesta.json().catch(() => ({}));
+
+      // Web3Forms devuelve { success: false } con HTTP 200 en algunos errores,
+      // así que no alcanza con mirar respuesta.ok.
+      if (!respuesta.ok || !datos.success) {
+        throw new Error(datos.message || `El servidor respondió ${respuesta.status}`);
+      }
+
+      setResultado({
+        ok: true,
+        texto: `¡Gracias ${formData.nombre}! Recibimos tu consulta y te vamos a responder a la brevedad.`
+      });
+      setFormData(ESTADO_INICIAL);
+    } catch (error) {
+      // No limpiamos el formulario: lo que escribió el usuario tiene que seguir ahí
+      // para que pueda reintentar sin volver a tipear todo.
+      setResultado({
+        ok: false,
+        texto: 'No pudimos enviar tu consulta. Revisá tu conexión y probá de nuevo, o escribinos al 388 54881245.'
+      });
+      console.error('Web3Forms:', error);
+    } finally {
+      setEnviando(false);
+    }
   };
 
   return (
@@ -84,9 +147,41 @@ const Footer = () => {
               <textarea name="mensaje" value={formData.mensaje} onChange={handleChange} rows="2" placeholder="Detalles del inmueble..." required className='w-full bg-stone-900/80 text-white rounded-md p-2 text-xs border border-gray-800 focus:outline-none focus:border-red-500 resize-none' ></textarea>
             </div>
 
-            <button type="submit" className='w-full bg-[#d64531] text-white font-bold uppercase text-xs tracking-wider py-2.5 rounded-md hover:bg-red-600 transition-all duration-300 shadow-md cursor-pointer' >
-              Enviar Mensaje
+            {/* Honeypot anti-spam: invisible para personas, tentador para bots. */}
+            <input
+              type="checkbox"
+              name="botcheck"
+              tabIndex="-1"
+              autoComplete="off"
+              aria-hidden="true"
+              style={{ display: 'none' }}
+            />
+
+            <button
+              type="submit"
+              disabled={enviando}
+              className={`w-full text-white font-bold uppercase text-xs tracking-wider py-2.5 rounded-md transition-all duration-300 shadow-md ${
+                enviando
+                  ? 'bg-stone-600 cursor-wait'
+                  : 'bg-[#d64531] hover:bg-red-600 cursor-pointer'
+              }`}
+            >
+              {enviando ? 'Enviando…' : 'Enviar Mensaje'}
             </button>
+
+            {resultado && (
+              <p
+                role="status"
+                aria-live="polite"
+                className={`text-[11px] leading-snug rounded-md p-2.5 border ${
+                  resultado.ok
+                    ? 'bg-green-950/60 border-green-800/60 text-green-200'
+                    : 'bg-red-950/60 border-red-800/60 text-red-200'
+                }`}
+              >
+                {resultado.texto}
+              </p>
+            )}
           </form>
         </div>
 

@@ -460,14 +460,27 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...    # SOLO para scripts locales de migración
 
 **Fase 0.5 — ✅ COMPLETADA.** §3. Nueve commits en `limpieza/ecommerce-residual`: 11 archivos borrados, 4 dependencias desinstaladas (−68 paquetes del árbol), build y recorrido verificados tras cada commit. El bundle JS quedó idéntico byte a byte porque nada de lo borrado estaba importado; el ahorro real fue −4,9 KB de CSS y el árbol de dependencias.
 
-**Fase 0.6 — Formulario de contacto.** Deuda técnica #1 del §12: hoy `Footer.jsx:20-25` solo hace `console.log` y un `alert`, así que **las consultas de clientes se pierden**. Va antes que Supabase porque es pérdida de negocio en curso y no depende de nada del panel.
+**Fase 0.6 — ✅ COMPLETADA. Formulario de contacto.** Deuda técnica #1 del §12: `Footer.jsx:20-25` solo hacía `console.log` y un `alert`, así que **las consultas de clientes se perdían**. Va antes que Supabase porque era pérdida de negocio en curso y no dependía de nada del panel.
 
-- El envío pasa por un endpoint propio, `src/pages/api/contacto.ts` con `export const prerender = false`, que reenvía a un servicio externo de formularios. **No se postea al servicio desde el cliente**: así la access key no viaja al browser y, sobre todo, la Fase 8.5 puede cambiar el destino sin volver a tocar `Footer.jsx`.
-- Manejo de error real: si el envío falla, el usuario ve el error. **Nunca un "gracias" falso.**
-- Estado de carga en el botón, honeypot anti-spam, credencial en variable de entorno sin prefijo `PUBLIC_`.
-- Sin dependencias nuevas de npm: alcanza con `fetch`.
+**Solución puente deliberada.** Se implementó lo mínimo que funciona, sabiendo que se tira entero en la Fase 8.5: `fetch` nativo desde `Footer.jsx` directo a `https://api.web3forms.com/submit`, sin endpoint propio. Se descartó la alternativa de endpoint propio (`src/pages/api/contacto.ts`) más un proveedor transaccional por dos motivos:
 
-*Verificación: envío exitoso que llega al correo; envío forzado a fallar que muestra error y no limpia el formulario; envío con el honeypot lleno que se descarta.*
+1. **Los términos de Web3Forms no lo permiten en el plan gratuito.** Su API reference dice: *"Server side usage requires paid plan + server IP whitelisting"*. Además el whitelisting de IP es impracticable en Vercel, cuyas funciones serverless salen por IPs dinámicas.
+2. **No se amortiza.** Un endpoint propio más un dominio verificado se descartan igual en la Fase 8.5, que es la fase siguiente a Supabase. No vale la pena construir infraestructura para un puente.
+
+Lo implementado:
+
+- `POST` con `fetch` nativo, **sin dependencias nuevas de npm**.
+- `PUBLIC_WEB3FORMS_ACCESS_KEY` en `.env` (ignorado por git) y documentada en `.env.example`. Lleva prefijo `PUBLIC_` a propósito: la access key es pública por diseño y Web3Forms lo documenta explícitamente. **Hay que cargarla también en Vercel** o el formulario anda en local y falla en producción.
+- Manejo de error real: si el envío falla, el usuario ve el error con el teléfono como alternativa, y **el formulario no se limpia** para que pueda reintentar sin retipear. **Nunca un "gracias" falso.** Se contempla que Web3Forms devuelve `{ success: false }` con HTTP 200, así que no alcanza con mirar `response.ok`.
+- Botón deshabilitado con "Enviando…" mientras está en vuelo.
+- Honeypot `botcheck` oculto en el `<form>`.
+- Si la variable de entorno falta, no se intenta el envío: se muestra un error con el teléfono.
+
+**Límite a vigilar: 250 envíos/mes** en el plan gratuito (verificado en su FAQ). Superado eso, la API devuelve error y el usuario ve el mensaje de fallo. Es una de las razones para no demorar la Fase 8.5.
+
+**Lo que esta fase NO da**, y se pospone a la 8.5: el honeypot y el rate limiting son de Web3Forms, no nuestros. Del lado nuestro solo está el campo oculto.
+
+*Verificación: envío real recibido en la casilla de destino; envío con la key ausente que muestra error y no finge éxito.*
 
 **Fase 1 — Supabase + esquema.** Proyecto, migración SQL, catálogos semilla (con `legacy_label`), usuario de la dueña, `insert into admins`, signup público desactivado, bucket. *Verificación: `select public.is_admin()` correcto y las policies bloquean lo esperado.*
 
@@ -574,15 +587,15 @@ create policy "admin gestiona consultas" on public.contact_messages
 
 Alcance:
 
-- El endpoint de la Fase 0.6 (`src/pages/api/contacto.ts`) cambia su cuerpo por un `insert` a `contact_messages`. **`Footer.jsx` no se vuelve a tocar**: sigue posteando al mismo endpoint. Ese es el motivo de haber puesto un endpoint propio en la Fase 0.6 en lugar de postear directo al servicio externo desde el cliente.
+- **Web3Forms se retira por completo.** No queda como respaldo. Se borra el `fetch` a `api.web3forms.com` de `Footer.jsx`, se saca `PUBLIC_WEB3FORMS_ACCESS_KEY` de `.env`, de `.env.example` y de las variables de entorno de Vercel, y se da de baja la cuenta. El formulario pasa a escribir directo en `contact_messages`.
+- **Recién acá el honeypot y el rate limiting pasan a ser nuestros.** En la Fase 0.6 los provee Web3Forms desde su servidor (validan `botcheck` y devuelven 429 por su cuenta) y lo único nuestro es el campo oculto en el `<form>`, que un bot decidido puede saltear. Al desaparecer el intermediario hay que implementar los dos del lado nuestro: validación del honeypot en el servidor y rate limiting básico por IP, en el endpoint o en una función `security definer` de Postgres. **Si no se hacen, la tabla queda abierta a que cualquiera la llene**: la policy de insert para `anon` es `with check (true)` por necesidad.
 - Bandeja en el panel: listado con no leídas primero, marcar leída/archivada, link `mailto:` y a WhatsApp con el teléfono.
 - Badge con el conteo de no leídas en el sidebar.
-- **Qué pasa con el servicio externo**: se define acá. Dos opciones, ambas válidas —
-  (a) **retirarlo** y quedarse solo con la base, o
-  (b) **dejarlo como respaldo**: el endpoint inserta en Supabase *y además* dispara el envío al servicio, de modo que la dueña siga recibiendo el aviso por mail sin tener que entrar al panel. Si el insert falla, el mail sigue saliendo, y viceversa.
-  Recomendado (b) mientras la dueña no tenga el hábito de abrir el panel a diario. El costo es mantener la cuota del servicio bajo control.
+- **Aviso por correo**: al irse Web3Forms, la dueña deja de recibir el mail y tiene que entrar al panel. Si eso no funciona en la práctica, se resuelve con un webhook o un trigger de Supabase que dispare la notificación, no reinstalando Web3Forms.
 
-*Verificación: enviar una consulta desde el sitio y confirmar que (1) aparece en la tabla, (2) se ve en el panel, y (3) un `select` anónimo desde el browser contra `contact_messages` devuelve vacío.*
+> **Nota sobre el destinatario — pendiente abierto desde la Fase 0.6.** Hoy las consultas van a `baruc276@gmail.com`, que es el correo del dev, no el de la dueña. En la Fase 0.6 el destinatario no está en el código: está atado a la access key y se cambia desde el panel de Web3Forms. **Al migrar a `contact_messages` esto deja de ser un problema de configuración**: las consultas quedan en la base y las ve quien tenga acceso al panel. Igual hay que decidir a qué dirección van los avisos por correo, y si se suma o se reemplaza por la de la dueña. Es el ítem 7 del §12.
+
+*Verificación: enviar una consulta desde el sitio y confirmar que (1) aparece en la tabla, (2) se ve en el panel, (3) un `select` anónimo desde el browser contra `contact_messages` devuelve vacío, y (4) no queda ninguna referencia a web3forms en el código ni en las variables de entorno.*
 
 **Fase 9 — Cierre.** Borrar `data.jsx` y `categoryItem`; sacar `ShopContext.jsx` + simplificar `AppWrapper.jsx` con el protocolo de dos pasos; revisar bundle; instructivo con capturas para la dueña; credenciales en un gestor de contraseñas.
 
