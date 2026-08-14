@@ -6,37 +6,63 @@ const SearchFilters = ({
   handleInputChange,
   handleSearch,
   isAdvancedOpen,
-  setIsAdvancedOpen
+  setIsAdvancedOpen,
+  opciones = { localidades: [], barrios: [], tipos: [] }
 }) => {
-  const barriosUnicos = ["Bajo La Viña", "Los Perales", "Centro", "Ciudad de Nieva", "Almirante Brown", 
-                        "Moreno", "Palpalá", "Cuyaya", "San Pedrito", "Alto Comedero", "Yala", "San Pablo de Reyes, Gorriti"];
+  // Fase 3: las listas salen del catálogo de la base. Antes estaban
+  // hardcodeadas acá y en MobileFiltersModal, con contenidos distintos entre sí
+  // y sin el prefijo "Barrio", que es lo que rompía el filtro.
+  const { localidades = [], barrios = [], tipos = [] } = opciones ?? {};
+
+  // Si hay localidad elegida, solo se ofrecen sus barrios.
+  const barriosVisibles = formInputs.localidad
+    ? barrios.filter((b) => b.localidad_slug === formInputs.localidad)
+    : barrios;
 
   return (
     <form onSubmit={handleSearch} className="hidden md:block w-full bg-white border-b border-gray-200 px-4 md:px-8 py-3 relative z-30 mt-4 md:mt-4.5">
       <div className="max-w-7xl mx-auto flex flex-col gap-3">
         <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
           {/* Buscador principal */}
-          <div className="relative md:col-span-4">
+          <div className="relative md:col-span-3">
             <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xl" />
-            <input 
-              type="text" 
-              placeholder="Palabra clave..." 
-              value={formInputs.keyword} 
-              onChange={(e) => handleInputChange("keyword", e.target.value)} 
-              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-red-500" 
+            <input
+              type="text"
+              placeholder="Palabra clave..."
+              value={formInputs.keyword}
+              onChange={(e) => handleInputChange("keyword", e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-red-500"
             />
           </div>
 
-          {/* Barrio */}
-          <div className="relative md:col-span-3">
-            <select 
-              value={formInputs.barrio} 
-              onChange={(e) => handleInputChange("barrio", e.target.value)} 
+          {/* Localidad */}
+          <div className="relative md:col-span-2">
+            <select
+              value={formInputs.localidad}
+              onChange={(e) => handleInputChange("localidad", e.target.value)}
               className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm appearance-none focus:outline-none focus:border-red-500"
             >
-              <option value="">Todas las zonas</option>
-              {barriosUnicos.map((b) => (
-                <option key={b} value={b}>{b}</option>
+              <option value="">Toda la provincia</option>
+              {localidades.map((l) => (
+                <option key={l.slug} value={l.slug}>{l.label}</option>
+              ))}
+            </select>
+            <MdKeyboardArrowDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          </div>
+
+          {/* Barrio */}
+          <div className="relative md:col-span-2">
+            <select
+              value={formInputs.barrio}
+              onChange={(e) => handleInputChange("barrio", e.target.value)}
+              disabled={barriosVisibles.length === 0}
+              className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm appearance-none focus:outline-none focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">
+                {barriosVisibles.length === 0 ? "Sin barrios" : "Todos los barrios"}
+              </option>
+              {barriosVisibles.map((b) => (
+                <option key={b.slug} value={b.slug}>{b.label}</option>
               ))}
             </select>
             <MdKeyboardArrowDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -81,14 +107,16 @@ const SearchFilters = ({
         >
           <div>
             <label className="text-[11px] font-bold text-gray-400 uppercase block mb-1">Tipo</label>
-            <select 
-              value={formInputs.tipo} 
-              onChange={(e) => handleInputChange("tipo", e.target.value)} 
+            {/* La lista sale del catálogo. Antes estaba hardcodeada y le faltaba
+                'Oficina', así que las ids 4 y 8 no se podían filtrar por tipo. */}
+            <select
+              value={formInputs.tipo}
+              onChange={(e) => handleInputChange("tipo", e.target.value)}
               className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md text-xs focus:outline-none focus:border-red-500"
             >
               <option value="">Todos</option>
-              {["Casa", "Terreno", "Departamento", "Local", "Galpon","Nave"].map(t => (
-                <option key={t} value={t}>{t}</option>
+              {tipos.map((t) => (
+                <option key={t.slug} value={t.slug}>{t.label}</option>
               ))}
             </select>
           </div>

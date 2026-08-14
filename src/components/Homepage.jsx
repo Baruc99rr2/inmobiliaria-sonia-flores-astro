@@ -6,13 +6,15 @@ import Nosotros from './Nosotros'
 import AboutUs from './AboutUs'
 import Servicios from './Servicios'
 
-const Homepage = ({ onVideoLoaded }) => {
+// `products` llega desde index.astro con lo que hay en Supabase. Si es null
+// (consulta fallida), ProductList y Carrusel caen al fallback de data.jsx.
+const Homepage = ({ onVideoLoaded, products }) => {
   return (
     <div>
       {/* LE PASAMOS LA FUNCIÓN DE CARGA AL HERO */}
       <Hero onVideoLoaded={onVideoLoaded} />
-      <ProductList />
-      <Carrusel />
+      <ProductList products={products} />
+      <Carrusel products={products} />
       <Nosotros />
       <AboutUs />
       <Servicios />

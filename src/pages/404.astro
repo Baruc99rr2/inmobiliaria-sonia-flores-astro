@@ -1,0 +1,17 @@
+---
+import Layout from '../layouts/Layout.astro';
+import PropiedadNoEncontrada from '../components/PropiedadNoEncontrada.astro';
+
+// La ruta /404 no existía: `propiedades/[id].astro` redirigía acá desde antes de
+// la Fase 3, y el visitante caía en una página inexistente.
+---
+
+<Layout
+  title="Página no encontrada | Inmobiliaria Sonia Flores"
+  description="La página que buscás no existe. Mirá nuestras propiedades en alquiler y venta en San Salvador de Jujuy."
+>
+  <PropiedadNoEncontrada
+    titulo="No encontramos esta página"
+    texto="Puede que el enlace esté mal escrito o que la página ya no exista."
+  />
+</Layout>

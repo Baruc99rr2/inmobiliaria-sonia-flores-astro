@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { productsData } from "../../data";
+import { construirOpciones, zonaDeProducto, tipoDeProducto } from "../../lib/zonas";
 
 import SearchFilters from "./SearchFilters";
 import MobileFiltersModal from "./MobileFiltersModal";
@@ -8,21 +9,31 @@ import SearchResultsHeader from "./SearchResultsHeader";
 import PropertySearchCard from "./PropertySearchCard";
 import PaginationControls from "./PaginationControls";
 
-const Busqueda = () => {
-  const products = productsData;
+const Busqueda = ({ products: productsProp, catalogos }) => {
+  // Fase 3: los datos llegan por prop desde busqueda.astro. `data.jsx` queda
+  // como fallback si la consulta a Supabase falla, hasta la Fase 9.
+  const products = productsProp ?? productsData ?? [];
+
+  // Opciones de los <select>. Vienen del catálogo de la base; si no hay
+  // catálogo (fallback), se derivan de las propiedades que haya.
+  const opciones = useMemo(
+    () => construirOpciones(catalogos, products),
+    [catalogos, products]
+  );
 
   // Estados principales
   const [formInputs, setFormInputs] = useState({
-    keyword: "", 
-    barrio: "", 
-    estado: "", 
+    keyword: "",
+    localidad: "",
+    barrio: "",
+    estado: "",
     tipo: "",
-    dormitorios: "", 
-    banos: "", 
-    areaMin: "", 
-    areaMax: "", 
-    precioMin: "", 
-    precioMax: "", 
+    dormitorios: "",
+    banos: "",
+    areaMin: "",
+    areaMax: "",
+    precioMin: "",
+    precioMax: "",
     propId: ""
   });
 
@@ -42,7 +53,13 @@ const Busqueda = () => {
   };
 
   const handleInputChange = (field, value) => {
-    setFormInputs(prev => ({ ...prev, [field]: value }));
+    setFormInputs(prev => {
+      const siguiente = { ...prev, [field]: value };
+      // Cambiar de localidad limpia el barrio: los barrios listados son los de
+      // esa localidad, y dejar uno de otra daría siempre cero resultados.
+      if (field === "localidad") siguiente.barrio = "";
+      return siguiente;
+    });
   };
 
   const handleSearch = (e) => {
@@ -68,13 +85,17 @@ const Busqueda = () => {
     const estadoParam = params.get('estado');
     const tipoParam = params.get('tipo');
     const barrioParam = params.get('barrio');
+    const localidadParam = params.get('localidad');
 
-    if (estadoParam || tipoParam || barrioParam) {
+    // `estado` sigue siendo texto ('Venta' / 'Alquiler'): es lo que manda el
+    // Navbar. `tipo`, `barrio` y `localidad` ahora son slugs.
+    if (estadoParam || tipoParam || barrioParam || localidadParam) {
       const initialFilters = {
         ...formInputs,
         ...(estadoParam && { estado: estadoParam }),
         ...(tipoParam && { tipo: tipoParam }),
         ...(barrioParam && { barrio: barrioParam }),
+        ...(localidadParam && { localidad: localidadParam }),
       };
       setFormInputs(initialFilters);
       setActiveFilters(initialFilters);
@@ -87,13 +108,23 @@ const Busqueda = () => {
       const d = p.detalles || {};
       const f = activeFilters;
 
+      // Zona y tipo se comparan por SLUG, no por el texto visible.
+      //
+      // Antes esto era `d.barrio !== f.barrio` contra una lista hardcodeada sin
+      // el prefijo "Barrio": el <select> ofrecía "Los Perales" y el dato decía
+      // "Barrio Los Perales", así que 11 de las 12 opciones devolvían cero
+      // resultados. Comparar slugs también elimina el problema de tildes y
+      // mayúsculas ("Palpalá" vs "palpala").
+      const zona = zonaDeProducto(d);
+
       if (f.propId && p.id.toString() !== f.propId.trim()) return false;
-      if (f.keyword && 
-          !p.name.toLowerCase().includes(f.keyword.toLowerCase()) && 
+      if (f.keyword &&
+          !p.name.toLowerCase().includes(f.keyword.toLowerCase()) &&
           !p.description.toLowerCase().includes(f.keyword.toLowerCase())) return false;
-      if (f.barrio && d.barrio !== f.barrio) return false;
+      if (f.localidad && zona.localidad !== f.localidad) return false;
+      if (f.barrio && zona.barrio !== f.barrio) return false;
       if (f.estado && p.category !== f.estado) return false;
-      if (f.tipo && d.tipo !== f.tipo) return false;
+      if (f.tipo && tipoDeProducto(d) !== f.tipo) return false;
       if (f.dormitorios && d.dormitorios !== parseInt(f.dormitorios)) return false;
       if (f.banos && d.banos !== parseInt(f.banos)) return false;
       if (f.areaMin && (!d.superficie_m2 || d.superficie_m2 < parseInt(f.areaMin))) return false;
@@ -126,12 +157,13 @@ const Busqueda = () => {
   return (
     <div className="w-full relative block bg-gray-50 pt-[75px]">
       {/* Filtros Desktop */}
-      <SearchFilters 
+      <SearchFilters
         formInputs={formInputs}
         handleInputChange={handleInputChange}
         handleSearch={handleSearch}
         isAdvancedOpen={isAdvancedOpen}
         setIsAdvancedOpen={setIsAdvancedOpen}
+        opciones={opciones}
       />
 
       {/* Trigger de Filtros Móviles */}
@@ -204,13 +236,14 @@ const Busqueda = () => {
       </div>
 
       {/* Modal Filtros Móviles */}
-      <MobileFiltersModal 
+      <MobileFiltersModal
         isOpen={isMobileFiltersOpen}
         setIsOpen={setIsMobileFiltersOpen}
         formInputs={formInputs}
         handleInputChange={handleInputChange}
         handleSearch={handleSearch}
         handleClearFilters={handleClearFilters}
+        opciones={opciones}
       />
     </div>
   );

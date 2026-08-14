@@ -98,9 +98,10 @@ const ProductCard = ({ product }) => {
 };
 
 // CONTENEDOR PRINCIPAL
-const ProductList = () => {
-  // Leemos directamente de la importación de datos
-  const products = productsData || [];
+const ProductList = ({ products: productsProp }) => {
+  // Fase 3: los datos llegan por prop desde index.astro. `data.jsx` queda como
+  // fallback si la consulta a Supabase falla, hasta que se borre en la Fase 9.
+  const products = productsProp ?? productsData ?? [];
   const baseProducts = products.slice(0, 10);
 
   return (
