@@ -577,7 +577,7 @@ export const productsData = [
             lon: -65.327809
         }
     },
-        {
+    {
             id: 18, // O el ID que corresponda en tu sistema
             images: [
                 '/propiedades/local-palpala-alquiler/local-palpala-alquiler1.jpg',
@@ -615,6 +615,53 @@ export const productsData = [
                 mapaQuery: 'Avenida Libertad 200, Palpalá, Jujuy',
                 lat: -24.255143,
                 lon: -65.203527
-                }
+            }
+    },
+    {
+        id: 19, 
+        images: [
+            '/propiedades/casa-nueva/casa-nueva.jpg',
+            '/propiedades/casa-nueva/casa-nueva.mp4'
+        ],
+        name: 'Casa en Venta con Cochera Doble, Asador y Salida a Dos Calles',
+        price: 'A consultar',
+        category: 'Venta',
+        description: 'Inmobiliaria Sonia Flores vende hermosa propiedad construida con materiales de primera calidad, excelente ubicación y una distribución impecable.\n\nLa casa cuenta con amplio living comedor, cocina, cocina comedor diario, lavadero, 2 dormitorios principales, antebaño, baño completo y un espacio versátil ideal para escritorio, biblioteca o 3er dormitorio, además de baño de cortesía para visitas.\n\nEn el exterior dispone de cochera para 2 vehículos, asador, habitación de guardado y lote en esquina/quinoa con un valioso acceso por 2 calles.\n\n📞 Para más información comunicarse al 3884881245 de 9 a 13 y de 16 a 18 hs.\nMartillera Sonia Flores MP 177.',
+        detalles: {
+            tipo: 'Casa',
+            barrio: 'A consultar',
+            cocheras: 2,
+            ambientes: 4,
+            calle: 'A consultar',
+            numero: '',
+            dormitorios: 2,
+            banos: 2,
+            mostrarDireccionExacta: false,
+            superficie_m2: 'a consultar',
+            frente_m: 'a consultar',
+            fondo_m: 'a consultar',
+            servicios: [
+                'Agua',
+                'Luz',
+                'Cloaca',
+                'Gas',
+                'Pavimento'
+            ],
+            adicionales: [
+                'Materiales de Primera',
+                'Salida a 2 Calles',
+                'Cochera Doble',
+                'Asador',
+                'Habitación de Guardado',
+                'Living Comedor',
+                'Cocina Comedor Diario',
+                'Lavadero',
+                'Escritorio / Biblioteca',
+                'Baño de Visitas'
+            ],
+            mapaQuery: 'San Salvador de Jujuy, Jujuy',
+            lat: null,
+            lon: null
         }
+    }
 ]
