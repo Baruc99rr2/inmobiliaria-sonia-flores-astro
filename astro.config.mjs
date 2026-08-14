@@ -7,8 +7,10 @@ import vercel from '@astrojs/vercel';
 
 // https://astro.build/config
 export default defineConfig({
-  // 🚀 AGREGA ESTA LÍNEA CON TU URL DE VERCEL
-  site: 'https://inmobiliaria-sonia-flores-astro.vercel.app',
+  // Dominio canónico del sitio. Va CON www: la versión sin www responde 308
+  // redirigiendo acá, así que usarla generaría canónicas y og:url que apuntan
+  // a una URL que redirige.
+  site: 'https://www.inmobiliariasoniaflores.com',
 
   integrations: [react()],
 

@@ -15,7 +15,10 @@ const {
   image = "/SoniaLogo.png"
 } = Astro.props;
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'https://inmobiliariasoniaflores.com');
+// El fallback va CON www, igual que `site` en astro.config.mjs: la versión sin
+// www responde 308 hacia www, así que apuntar ahí generaría canónicas hacia una
+// URL que redirige.
+const canonicalURL = new URL(Astro.url.pathname, Astro.site || 'https://www.inmobiliariasoniaflores.com');
 const fullImageUrl = image.startsWith('http') ? image : new URL(image, canonicalURL).href;
 ---
 

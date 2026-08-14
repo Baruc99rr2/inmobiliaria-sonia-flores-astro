@@ -118,13 +118,15 @@ export default defineConfig({
 });
 ```
 
+> **Nota posterior (dominio propio).** El bloque de arriba es la cita literal del archivo **tal como estaba durante la auditoría de la Fase 0** y se conserva sin tocar por fidelidad. Después de la Fase 0.6 se conectó el dominio propio y `site` pasó a `https://www.inmobiliariasoniaflores.com` (con `www`: la versión sin `www` responde 308 hacia ella). El fallback de `Layout.astro` se actualizó en el mismo cambio. Lo demás del archivo sigue igual.
+
 | Ítem | Valor |
 |---|---|
 | `output` | **no declarado** → default `'static'` (confirmado por el log del build: `output: "static"`) |
 | `adapter` | `@astrojs/vercel` v11, import default desde `'@astrojs/vercel'` (forma correcta para v11; la vieja `@astrojs/vercel/serverless` ya no existe) |
 | Integraciones | solo `react()` |
 | Tailwind | v4 vía plugin de Vite `@tailwindcss/vite`, **sin `tailwind.config.js`** |
-| `site` | apunta a la URL de Vercel; `Layout.astro:18` la usa para la canónica |
+| `site` | en la auditoría apuntaba a la URL de Vercel; hoy al dominio propio con `www`. `Layout.astro:18` la usa para la canónica |
 
 ✅ **La configuración ya está exactamente en el estado que pide el plan §9.1**: `output: 'static'` + adapter. Para las Fases 3 y 4 alcanza con agregar `export const prerender = false` en las páginas que lo necesiten. **No hay que tocar `astro.config.mjs`.**
 
