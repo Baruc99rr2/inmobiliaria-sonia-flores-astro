@@ -31,7 +31,13 @@
 | `detalles.frente_m` | 7 | No — ningún componente lo renderiza |
 | `detalles.fondo_m` | 7 | No — ídem |
 | `detalles.expensas` | 5 | No — ídem |
-| **Total** | **36** | **8 visibles** |
+| `detalles.lat` / `detalles.lon` | 6 | No — diferencia de 4 nanómetros (§3.5) |
+| **Total** | **42** | **8 visibles** |
+
+> **Actualización tras correr la migración.** Las 36 diferencias de arriba salieron del
+> round-trip *simulado*. Con la base ya cargada y leyendo con la publishable key
+> aparecieron **6 más**, todas de `lat`/`lon` y todas irrelevantes: ver §3.5. El total
+> real es **42**, y las visibles siguen siendo **8**.
 
 **Todo lo demás reproduce `data.jsx` exactamente**: `id`, `name`, `price`, `category`,
 `description`, `images`, y dentro de `detalles` los campos `tipo`, `barrio`, `calle`,
@@ -168,6 +174,36 @@ automático, no una afirmación de "esta propiedad no tiene expensas". Migrarlo 
 significaría publicar "Expensas: No tiene" en la Fase 3.5 sobre algo que la dueña nunca
 dijo. Va a `NULL` → "A consultar". Si ella confirma que esas cinco no tienen expensas,
 es un `UPDATE` de una línea.
+
+### 3.5 `lat` / `lon` — 3 propiedades, 6 coordenadas
+
+**Afecta a las ids 1, 10 y 11**, que son las tres que tienen coordenadas con 17 dígitos
+significativos en `data.jsx`.
+
+| id | campo | `data.jsx` | Supabase | diferencia |
+|---|---|---|---|---|
+| 1 | lat | `-24.16926436167806` | `-24.1692643616781` | 3,9 × 10⁻¹⁴ ° ≈ 4,4 nm |
+| 1 | lon | `-65.32529026568182` | `-65.3252902656818` | 1,4 × 10⁻¹⁴ ° ≈ 1,5 nm |
+| 10 | lat | `-24.174281946644435` | `-24.1742819466444` | 3,6 × 10⁻¹⁴ ° ≈ 4,0 nm |
+| 10 | lon | `-65.30463208760564` | `-65.3046320876056` | 4,3 × 10⁻¹⁴ ° ≈ 4,3 nm |
+| 11 | lat | `-24.365787548293422` | `-24.3657875482934` | 2,1 × 10⁻¹⁴ ° ≈ 2,4 nm |
+| 11 | lon | `-65.33530500933232` | `-65.3353050093323` | 1,4 × 10⁻¹⁴ ° ≈ 1,5 nm |
+
+No es pérdida de datos en la base: la columna es `double precision` y guarda el valor
+bien. Es PostgREST, que serializa el número a JSON con 15 dígitos significativos en vez
+de los 17 que tenía el literal de `data.jsx`.
+
+**Impacto cero.** El desplazamiento máximo es de **4 nanómetros**, unas doce órdenes de
+magnitud por debajo de la precisión de un GPS. El marcador de Leaflet cae exactamente en
+el mismo píxel a cualquier zoom.
+
+Las otras 16 propiedades no muestran diferencia porque sus coordenadas tienen 6 u 8
+decimales y entran holgadas en 15 dígitos significativos.
+
+Esta diferencia **no aparecía en el round-trip simulado**: ahí las coordenadas viajaban
+como números de JavaScript sin pasar por la serialización de PostgREST. Salió recién al
+leer de la base de verdad, que es justamente para lo que sirve haber hecho las dos
+pruebas.
 
 ### 3.4 `superficie_m2` de la id 3 — cambio de tipo
 
