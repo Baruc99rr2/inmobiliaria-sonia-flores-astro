@@ -21,9 +21,37 @@
 
 **Dinámica**: una fase por vez, informe al terminar, OK explícito antes de la siguiente.
 
-**Estado**: Fases 0 y 0.5 ✅ completadas (ver `INFORME-FASE-0.md`). Siguiente: Fase 0.6 (formulario de contacto), después Fase 1.
+**Estado**: Fases 0, 0.5, 0.6, 1, 2, 3, 3.9 y 3.5 ✅ completadas y mergeadas a `main`.
+**Siguiente: Fase 4 — auth.**
 
-**Fases**: 0, 0.5, 0.6, 1, 2, 3, 3.5, 4, 5, 6, 6.5, 7, 8, 8.5, 9.
+**Fases**: 0, 0.5, 0.6, 1, 2, 3, 3.9, 3.5, **4**, 5, 6, 6.5, 7, 8, 8.5, 9.
+
+Informes complementarios, todos lectura obligatoria antes de tocar lo suyo:
+`INFORME-FASE-0.md` (inventario y clasificación MUERTO/ZOMBIE/VIVO),
+`INFORME-FASE-2.md` (diferencias entre `data.jsx` y el adaptador),
+`INFORME-FASE-3.md` (sitio leyendo de la DB, filtro por slug, 404, fallback),
+`INFORME-FASE-3.5.md` (tri-estado, `hide_location`, íconos de servicios).
+
+> **Arranque de la Fase 4.** Los tres primeros pasos, en este orden:
+> 1. Agregar el alias `@/*` a `tsconfig.json` — **no existe todavía**. Ningún archivo usa
+>    imports absolutos, así que el riesgo es nulo:
+>    ```json
+>    "compilerOptions": { "baseUrl": ".", "paths": { "@/*": ["./src/*"] } }
+>    ```
+> 2. `npx shadcn@latest init`, que **exige** ese alias. Verificar el setup contra la
+>    documentación oficial: con Tailwind v4 no hay `tailwind.config.js` clásico.
+> 3. `/admin/login`, guard y redirecciones.
+>
+> Dos cosas ya resueltas que la Fase 4 hereda: `clsx` y `tailwind-merge` **ya están
+> instaladas** (se preservaron a propósito en la Fase 0.5 para el helper `cn()`), y
+> `src/lib/supabase.ts` —el cliente de browser, que hasta ahora no usaba nadie— ya no tira
+> si faltan las credenciales: devuelve `null` y **quien lo use tiene que contemplarlo**.
+>
+> ⚠️ **Trampa heredada de la Fase 3**: las variables `PUBLIC_*` se incrustan en tiempo de
+> build. En el servidor hay red de contención vía `process.env`, pero **en el browser no**.
+> Si el bundle se compiló sin las claves, `supabase.ts` queda en `null` sin forma de
+> recuperarse en runtime, y eso **rompe el login**. Ante cualquier duda, redeploy
+> destildando *Use existing Build Cache*. Ver `INFORME-FASE-3.md` §8.
 
 ---
 
@@ -599,6 +627,19 @@ Alcance:
 
 **Fase 9 — Cierre.** Borrar `data.jsx` y `categoryItem`; sacar `ShopContext.jsx` + simplificar `AppWrapper.jsx` con el protocolo de dos pasos; revisar bundle; instructivo con capturas para la dueña; credenciales en un gestor de contraseñas.
 
+> **Al borrar `data.jsx`, además:**
+> - Sacar el `?? productsData` de los cuatro componentes que lo usan como fallback
+>   (`Homepage`, `ProductList`, `Carrusel`, `Busqueda`) y el `productsData.find(...)` de
+>   `propiedades/[id].astro`. Ahí el fallback deja de existir: **conviene decidir antes qué
+>   se sirve si Supabase no responde**, porque hoy la respuesta es "el sitio sigue en pie
+>   con datos viejos" y va a pasar a ser un error.
+> - Simplificar `formatUbicacion()` en `src/lib/format.js`: la detección de ubicación
+>   reservada por el centinela `'A consultar'` existe **solo** para el fallback. Con
+>   `data.jsx` afuera, queda `detalles.hide_location === true` y nada más. Es el ítem 12
+>   del §12.
+> - Revisar si `zonaDeProducto()` en `src/lib/zonas.js` todavía necesita derivar slugs del
+>   texto legacy, por el mismo motivo.
+
 ---
 
 ## 8. Diseño del formulario (Fase 6)
@@ -680,7 +721,25 @@ Tier gratuito: **1 GB**. Casi todas las propiedades tienen `.mp4`. Los videos ac
 | 11 | Clave `pk_test_` de Stripe versionada en git (pública, sin riesgo real, queda en el historial) | `Cart.jsx:9` | 🟡 Baja — `Cart.jsx` borrado en la Fase 0.5; la clave queda en el historial |
 | 12 | **`anon` tiene `REFERENCES`, `TRIGGER` y `TRUNCATE` sobre todas las tablas**, incluidas `property_notes` y `admins`. Vienen de los *default privileges* preexistentes del proyecto de Supabase, **no** de `scripts/fase1-grants.sql`, que solo otorga `SELECT` y las escrituras del panel a `authenticated` | esquema `public` en Supabase | 🟠 Media — **revisar después de la Fase 6** |
 
+| 12 | **`etiquetaZona()` detecta la ubicación reservada por dos vías**: `hide_location`, que expone el adaptador desde la Fase 3.5, y el centinela `'A consultar'` en `barrio` y `calle`, que es lo único que tiene el fallback de `data.jsx`. La segunda vía es deuda deliberada, no un descuido | `src/lib/format.js` (`formatUbicacion`, `etiquetaZona`) | 🟡 Baja — **se borra en la Fase 9** |
+
+> **Detalle del ítem 12.** Mientras exista el fallback de `data.jsx`, el helper tiene que
+> seguir reconociendo el centinela: ese archivo no tiene `hide_location` ni ninguna otra
+> señal, y sin esa rama las ids 12 y 19 volverían a imprimir su dirección reservada si el
+> sitio cae al fallback. **Cuando `data.jsx` desaparezca en la Fase 9**, la detección por
+> centinela se puede borrar y `formatUbicacion` queda dependiendo solo de
+> `detalles.hide_location`. Concretamente, se simplifica esta condición:
+>
+> ```js
+> const reservada =
+>   detalles.hide_location === true ||
+>   (esSinDato(detalles.barrio) && esSinDato(detalles.calle) && !!detalles.barrio);
+> ```
+>
+> a solo `detalles.hide_location === true`. Sumarlo al checklist de la Fase 9.
+
 - El **ítem 1** entró al plan como **Fase 0.6** (arreglo inmediato contra un servicio externo) y se completa en la **Fase 8.5** (consultas en Supabase, visibles desde el panel).
+- El **ítem 12** se resuelve solo al borrar `data.jsx` en la **Fase 9**.
 - El **ítem 12** se revisa **después de la Fase 6**, no antes. Detalle para cuando llegue el momento: los tres privilegios sobrantes **no son explotables sin `SELECT` ni `INSERT`**, que `anon` no tiene sobre esas dos tablas. `REFERENCES` permitiría crear una FK contra ellas y `TRIGGER` adjuntar un trigger, pero las dos cosas requieren además ser dueño de otra tabla en el esquema, cosa que `anon` no es. **`TRUNCATE` es el único que molesta de verdad** y no debería estar: no lo frena RLS, porque RLS filtra filas y `TRUNCATE` opera sobre la tabla entera. Se saca con `revoke truncate on all tables in schema public from anon;` más el `alter default privileges` correspondiente. Se difiere para no tocar permisos con el panel a medio construir, donde un `revoke` de más se diagnostica mal.
 - Los ítems **2 a 6, 8, 9 y 10** se resuelven dentro de las Fases 3 y 3.5.
 - El **ítem 7** (el mail `baruc276@gmail.com` como contacto público de la inmobiliaria) sigue **fuera del plan y hay que decidirlo con la dueña**. Es el destinatario de las consultas de la Fase 0.6, así que conviene definirlo antes de que el formulario empiece a recibir tráfico real.

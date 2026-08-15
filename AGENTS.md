@@ -11,12 +11,23 @@ sin tocar código.
 empezar cualquier tarea relacionada con el panel, la base de datos o la migración
 de datos.** Reemplaza y anula las versiones v1 a v4.
 
-El trabajo está dividido en fases (0, 0.5, 0.6, 1, 2, 3, 3.5, 4, 5, 6, 6.5, 7, 8, 8.5, 9).
+El trabajo está dividido en fases (0, 0.5, 0.6, 1, 2, 3, 3.9, 3.5, 4, 5, 6, 6.5, 7, 8,
+8.5, 9).
 
-**Estado: Fases 0 y 0.5 completadas.** Ver `INFORME-FASE-0.md` (raíz), que es lectura
-complementaria obligatoria: contiene el inventario del código, la clasificación
-MUERTO/ZOMBIE/VIVO y el detalle de cómo se renderiza hoy cada campo numérico.
-Siguiente: Fase 0.6 (formulario de contacto), después Fase 1.
+**Estado: Fases 0, 0.5, 0.6, 1, 2, 3, 3.9 y 3.5 completadas y mergeadas a `main`.**
+**Siguiente: Fase 4 — auth (alias `@/*` + `shadcn init` + login).** Ver el bloque de
+arranque en la §0 del plan.
+
+Lectura complementaria obligatoria antes de tocar lo suyo: `INFORME-FASE-0.md`
+(inventario y clasificación MUERTO/ZOMBIE/VIVO), `INFORME-FASE-2.md` (diferencias entre
+`data.jsx` y el adaptador), `INFORME-FASE-3.md` (sitio leyendo de la DB, filtro por slug,
+404, fallback) e `INFORME-FASE-3.5.md` (tri-estado, `hide_location`, íconos).
+
+El sitio público **ya lee de Supabase**; `data.jsx` sigue vivo solo como fallback hasta la
+Fase 9. Para saber de dónde salieron los datos de una respuesta:
+`curl -sI <url> | grep -i x-datos-origen` → `supabase` o `fallback-data-jsx`. El
+`Cache-Control` **no** sirve para eso: Vercel le saca `s-maxage` antes de mandarlo al
+browser.
 
 **Regla de oro: una fase por vez.** Al terminar una fase, parás y entregás un informe.
 No arrancás la siguiente sin OK explícito del dev. No encadenes fases aunque la
