@@ -1,0 +1,12 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import PanelCatalogos from '../../components/admin/PanelCatalogos.tsx';
+
+export const prerender = false;
+
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+---
+
+<AdminLayout title="Catálogos — Panel Sonia Flores">
+  <PanelCatalogos client:only="react" />
+</AdminLayout>

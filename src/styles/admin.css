@@ -74,6 +74,22 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ---------------------------------------------------------------------------
+ * PALETA DE LA INMOBILIARIA (Fase 5)
+ *
+ * Tomada del sitio público, no inventada:
+ *   #d64531  rojo terracota de la marca. Es el del navbar, el del botón "Enviar
+ *            mensaje" del footer y el de los títulos de Servicios
+ *   #b91c1c  el hover de ese mismo rojo, ya usado en ProductList.jsx
+ *   #eeecec  el gris del fondo del sitio (`body` en global.css)
+ *
+ * Convertidos a OKLCH para no mezclar formatos con el resto del archivo, que es
+ * lo que genera shadcn.
+ *
+ * Solo se pisan las variables de marca. El resto de la escala de grises queda
+ * como viene: es neutra y funciona bien para un panel de carga de datos.
+ * ------------------------------------------------------------------------- */
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -81,7 +97,9 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+
+  /* #d64531 — el rojo de la marca */
+  --primary: oklch(0.5939 0.1849 30.92);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -92,21 +110,27 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+
+  /* El foco sigue al rojo de la marca en vez del gris por defecto */
+  --ring: oklch(0.5939 0.1849 30.92);
+
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
+
+  /* Barra lateral: fondo #eeecec, el gris del sitio público, para que el panel
+     se sienta parte del mismo producto y se despegue del blanco del contenido */
+  --sidebar: oklch(0.9446 0.0022 17.20);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary: oklch(0.5939 0.1849 30.92);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent: oklch(0.98 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-border: oklch(0.89 0.002 17.2);
+  --sidebar-ring: oklch(0.5939 0.1849 30.92);
 }
 
 .dark {
