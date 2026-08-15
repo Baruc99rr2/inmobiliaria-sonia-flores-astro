@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { HouseIcon, TagsIcon, LogOutIcon } from 'lucide-react';
+import { HouseIcon, TagsIcon, LogOutIcon, SunIcon, MoonIcon } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -16,6 +16,7 @@ import {
   SidebarTrigger,
 } from '@/components/admin/ui/sidebar';
 import { cerrarSesion, getSesion } from '@/lib/auth';
+import { temaActual, guardarTema, type Tema } from '@/lib/tema-panel';
 
 /**
  * Esqueleto del panel (Fase 5).
@@ -53,15 +54,28 @@ export default function AdminShell({
   const [email, setEmail] = useState<string | null>(null);
   const [saliendo, setSaliendo] = useState(false);
 
+  // Arranca en null y se llena al montar. El tema real ya lo aplicó el script
+  // inline del <head>; esto solo sincroniza el estado de React para dibujar el
+  // ícono correcto. Si lo inicializáramos con un valor fijo, el botón mostraría
+  // el ícono equivocado por un instante.
+  const [tema, setTema] = useState<Tema | null>(null);
+
   useEffect(() => {
     let vigente = true;
     getSesion().then((s) => {
       if (vigente) setEmail(s?.user?.email ?? null);
     });
+    setTema(temaActual());
     return () => {
       vigente = false;
     };
   }, []);
+
+  const cambiarTema = () => {
+    const siguiente: Tema = tema === 'oscuro' ? 'claro' : 'oscuro';
+    guardarTema(siguiente);
+    setTema(siguiente);
+  };
 
   const salir = async () => {
     if (saliendo) return;
@@ -75,10 +89,14 @@ export default function AdminShell({
       <Sidebar collapsible="icon">
         <SidebarHeader>
           <div className="flex items-center gap-2 px-2 py-1.5">
+            {/* El logo es un PNG con el texto en negro, así que sobre el fondo
+                oscuro desaparece. En vez de invertirlo —lo que volvería cian el
+                rojo de la marca— se le pone una base clara solo en tema oscuro,
+                y el logo conserva sus colores reales. */}
             <img
               src="/SoniaLogo.png"
               alt=""
-              className="h-8 w-8 shrink-0 object-contain"
+              className="h-8 w-8 shrink-0 object-contain dark:bg-white dark:rounded-md dark:p-0.5"
             />
             <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
               <span className="truncate text-sm font-semibold">Sonia Flores</span>
@@ -113,6 +131,20 @@ export default function AdminShell({
 
         <SidebarFooter>
           <SidebarMenu>
+            <SidebarMenuItem>
+              {/* El ícono muestra a dónde vas, no dónde estás: en claro se ve
+                  la luna porque tocarlo lleva a oscuro. Mientras `tema` es null
+                  se reserva el espacio sin ícono, para que no salte el layout. */}
+              <SidebarMenuButton
+                onClick={cambiarTema}
+                disabled={tema === null}
+                tooltip={tema === 'oscuro' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro'}
+              >
+                {tema === 'oscuro' ? <SunIcon /> : <MoonIcon />}
+                <span>{tema === 'oscuro' ? 'Tema claro' : 'Tema oscuro'}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
             {email && (
               <SidebarMenuItem>
                 <div className="px-2 py-1 text-xs text-muted-foreground truncate group-data-[collapsible=icon]:hidden">

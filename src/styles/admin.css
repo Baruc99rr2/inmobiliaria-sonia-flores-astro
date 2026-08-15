@@ -98,8 +98,12 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
 
-  /* #d64531 — el rojo de la marca */
-  --primary: oklch(0.5939 0.1849 30.92);
+  /* El rojo de la marca, apenas oscurecido.
+     #d64531 exacto (L=0.5939) con texto claro encima da 4.23:1, y el mínimo AA
+     para texto normal es 4.5. Bajando a L=0.57 queda #ce3d29 → 4.68:1. La
+     diferencia no se percibe al lado del rojo del sitio, y el botón principal
+     del panel pasa a ser legible. */
+  --primary: oklch(0.57 0.1849 30.92);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -108,11 +112,19 @@
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
+
+  /* Borde decorativo de tarjetas y separadores. Se deja claro a propósito: WCAG
+     1.4.11 pide 3:1 para lo que identifica un control, no para adornos. */
   --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
+
+  /* Borde de los campos de formulario. Acá SÍ aplica el 3:1: en tema claro el
+     input es transparente, así que el borde es lo único que dice dónde
+     escribir. El default de shadcn (0.922) daba 1.26:1, prácticamente
+     invisible. L=0.66 da 3.11:1. */
+  --input: oklch(0.66 0 0);
 
   /* El foco sigue al rojo de la marca en vez del gris por defecto */
-  --ring: oklch(0.5939 0.1849 30.92);
+  --ring: oklch(0.57 0.1849 30.92);
 
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
@@ -133,6 +145,23 @@
   --sidebar-ring: oklch(0.5939 0.1849 30.92);
 }
 
+/* ---------------------------------------------------------------------------
+ * TEMA OSCURO DEL PANEL (Fase 5.5)
+ *
+ * Se activa con la clase `dark` en el <html>. Solo aplica al panel: el sitio
+ * público usa `global.css`, que no tiene nada de esto.
+ *
+ * Dos cosas se apartan de lo que genera shadcn por defecto:
+ *
+ *  1. El rojo de la marca se conserva en oscuro, aclarado a L=0.70. shadcn deja
+ *     `--primary` en gris claro, lo que borra la identidad del panel. A L=0.59
+ *     (el rojo del sitio) el texto blanco encima no llega a 4.5:1, así que se
+ *     sube la luminosidad hasta que sí llega.
+ *  2. `--destructive` y `--muted-foreground` se aclararon respecto del default
+ *     porque no pasaban el contraste mínimo sobre `--card`. Ver la auditoría en
+ *     INFORME-FASE-5.5.md.
+ * ------------------------------------------------------------------------- */
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
@@ -140,31 +169,49 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+
+  /* El rojo de la marca, aclarado para que el texto blanco encima sea legible */
+  --primary: oklch(0.70 0.1700 30.92);
+  --primary-foreground: oklch(0.145 0 0);
+
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
+
+  /* Texto secundario: subido de 0.708 para pasar 4.5:1 sobre --card */
+  --muted-foreground: oklch(0.769 0 0);
+
   --accent: oklch(0.269 0 0);
   --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+
+  /* Error: subido de 0.704 para pasar 4.5:1 sobre --card, que es el fondo
+     que usa la variante destructive del Alert */
+  --destructive: oklch(0.75 0.16 22.216);
+
+  /* Borde decorativo: más marcado que el 10% del default, que sobre este fondo
+     queda casi invisible. No necesita 3:1 porque es adorno. */
+  --border: oklch(1 0 0 / 18%);
+
+  /* Borde de campos: 34% es el mínimo que llega a 3:1 sobre el fondo oscuro.
+     El default de shadcn (15%) daba 1.4:1. */
+  --input: oklch(1 0 0 / 34%);
+
+  --ring: oklch(0.70 0.17 30.92);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
+
+  /* Barra lateral apenas más oscura que el contenido, para que se despegue */
+  --sidebar: oklch(0.185 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.70 0.17 30.92);
+  --sidebar-primary-foreground: oklch(0.145 0 0);
   --sidebar-accent: oklch(0.269 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar-border: oklch(1 0 0 / 18%);
+  --sidebar-ring: oklch(0.70 0.17 30.92);
 }
 
 @layer base {

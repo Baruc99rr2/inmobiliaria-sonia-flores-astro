@@ -8,6 +8,7 @@
  * intacto. Ver el comentario de `src/styles/admin.css`.
  */
 import '../styles/admin.css';
+import { SCRIPT_ANTI_FLASH } from '../lib/tema-panel';
 
 interface Props {
   title?: string;
@@ -25,6 +26,13 @@ const { title = 'Panel — Inmobiliaria Sonia Flores' } = Astro.props;
     <title>{title}</title>
     {/* El panel no se indexa. */}
     <meta name="robots" content="noindex, nofollow" />
+
+    {/*
+      Aplica el tema ANTES del primer pintado. Va inline y sin defer a
+      propósito: cualquier script externo llega tarde y se ve un destello blanco
+      al cargar el panel en oscuro. `is:inline` evita que Astro lo procese.
+    */}
+    <script is:inline set:html={SCRIPT_ANTI_FLASH} />
   </head>
   <body class="min-h-screen bg-background text-foreground antialiased">
     <slot />
