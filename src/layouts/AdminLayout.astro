@@ -1,0 +1,32 @@
+---
+/**
+ * Layout del panel.
+ *
+ * Deliberadamente NO usa `Layout.astro`: el panel no lleva el navbar ni el
+ * footer del sitio público, y sobre todo no comparte hoja de estilos. Acá se
+ * importa `admin.css` (shadcn), y el sitio público sigue con `global.css`
+ * intacto. Ver el comentario de `src/styles/admin.css`.
+ */
+import '../styles/admin.css';
+
+interface Props {
+  title?: string;
+}
+
+const { title = 'Panel — Inmobiliaria Sonia Flores' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/SoniaLogo.png" />
+    <title>{title}</title>
+    {/* El panel no se indexa. */}
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+  <body class="min-h-screen bg-background text-foreground antialiased">
+    <slot />
+  </body>
+</html>

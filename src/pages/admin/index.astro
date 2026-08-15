@@ -1,0 +1,15 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import PanelInicio from '../../components/admin/PanelInicio.tsx';
+
+// El guard vive adentro de PanelInicio, en la misma isla: la sesión es del
+// cliente, así que el servidor no puede decidir nada acá.
+export const prerender = false;
+
+// El panel no se cachea nunca, ni en el CDN ni en el browser.
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+---
+
+<AdminLayout title="Panel — Inmobiliaria Sonia Flores">
+  <PanelInicio client:only="react" />
+</AdminLayout>

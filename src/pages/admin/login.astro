@@ -1,0 +1,20 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import LoginForm from '../../components/admin/LoginForm.tsx';
+
+// La sesión vive en el cliente, así que el HTML no depende de ella. Igual se
+// sirve por request y sin cachear: no queremos que el CDN guarde una página del
+// panel.
+export const prerender = false;
+
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+---
+
+<AdminLayout title="Entrar al panel — Inmobiliaria Sonia Flores">
+  <main class="min-h-screen grid place-items-center p-6">
+    <div class="w-full max-w-sm flex flex-col items-center gap-6">
+      <img src="/SoniaLogo.png" alt="Inmobiliaria Sonia Flores" class="h-16 w-auto object-contain" />
+      <LoginForm client:only="react" />
+    </div>
+  </main>
+</AdminLayout>
