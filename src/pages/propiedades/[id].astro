@@ -1,37 +1,83 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import ProductDetailsReact from '../../components/ProductDetailsReact.jsx';
+import PropiedadNoEncontrada from '../../components/PropiedadNoEncontrada.astro';
+import {
+  getProductByLegacyId,
+  CACHE_CONTROL,
+  HEADER_ORIGEN,
+  ORIGEN_SUPABASE,
+  ORIGEN_FALLBACK,
+} from '../../lib/properties';
 import { productsData } from '../../data';
 
-export function getStaticPaths() {
-  return productsData.map((product) => ({
-    params: { id: product.id.toString() },
-    props: { product },
-  }));
-}
+// Fase 3: se cae `getStaticPaths`. Antes generaba 18 páginas fijas en el build,
+// así que una propiedad nueva cargada desde el panel no iba a existir hasta el
+// próximo deploy. Ahora la ruta se resuelve por request contra Supabase.
+export const prerender = false;
 
-const { product } = Astro.props;
+const { id } = Astro.params;
+const legacyId = Number(id);
+const idValido = Number.isInteger(legacyId) && legacyId > 0;
 
-if (!product) {
-  return Astro.redirect('/404');
-}
+const resultado = idValido
+  ? await getProductByLegacyId(legacyId)
+  : { ok: true, product: null };
+
+// Si la consulta falló (Supabase caído, red, RLS) NO devolvemos 404: eso le
+// diría al buscador que la propiedad dejó de existir. Caemos a data.jsx, igual
+// que el home y la búsqueda. El 404 queda reservado para cuando la consulta
+// anduvo y la propiedad realmente no está.
+const product = resultado.ok
+  ? resultado.product
+  : (productsData.find((p) => p.id === legacyId) ?? null);
+
+const desdeFallback = !resultado.ok && product !== null;
 
 const siteOrigin = Astro.url.origin;
 const currentUrl = Astro.url.href;
-const imagesList = product.images || [product.image];
-const mainImageRaw = imagesList[0];
-const mainImage = mainImageRaw?.startsWith('http')
-  ? mainImageRaw
-  : `${siteOrigin}${mainImageRaw}`;
 
-const pageTitle = `${product.name} - ${product.detalles?.barrio || 'Jujuy'}`;
+// Vercel normaliza el Cache-Control; este header no. Ver properties.ts.
+Astro.response.headers.set(HEADER_ORIGEN, desdeFallback ? ORIGEN_FALLBACK : ORIGEN_SUPABASE);
+
+if (product) {
+  // Si estamos sirviendo el fallback, no dejamos que el CDN cachee 60 segundos
+  // una respuesta degradada: en cuanto Supabase vuelva, queremos el dato bueno.
+  Astro.response.headers.set(
+    'Cache-Control',
+    desdeFallback ? 'public, max-age=0, must-revalidate' : CACHE_CONTROL
+  );
+} else {
+  // Antes esto hacía `Astro.redirect('/404')`, una ruta que NO existía: el
+  // visitante terminaba en una página inexistente y el buscador recibía un 302
+  // en vez de un 404. Ahora se responde 404 de verdad, en la misma URL.
+  Astro.response.status = 404;
+  Astro.response.headers.set('Cache-Control', 'public, max-age=0, must-revalidate');
+}
+
+// Metadatos solo para el caso con propiedad.
+const imagesList = product?.images ?? [];
+const mainImageRaw = imagesList[0];
+const mainImage = mainImageRaw
+  ? (mainImageRaw.startsWith('http') ? mainImageRaw : `${siteOrigin}${mainImageRaw}`)
+  : `${siteOrigin}/SoniaLogo.png`;
 ---
 
-<Layout
-  title={pageTitle}
-  description={product.description}
-  image={mainImage}
-  url={currentUrl}
->
-  <ProductDetailsReact client:only="react" product={product} currentUrl={currentUrl} />
-</Layout>
+{
+  product ? (
+    <Layout
+      title={`${product.name} - ${product.detalles?.barrio || 'Jujuy'}`}
+      description={product.description}
+      image={mainImage}
+    >
+      <ProductDetailsReact client:only="react" product={product} currentUrl={currentUrl} />
+    </Layout>
+  ) : (
+    <Layout
+      title="Propiedad no encontrada | Inmobiliaria Sonia Flores"
+      description="La propiedad que buscás no está disponible. Mirá el resto de nuestras propiedades en alquiler y venta en San Salvador de Jujuy."
+    >
+      <PropiedadNoEncontrada />
+    </Layout>
+  )
+}

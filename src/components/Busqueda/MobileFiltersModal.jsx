@@ -7,11 +7,17 @@ const MobileFiltersModal = ({
   formInputs,
   handleInputChange,
   handleSearch,
-  handleClearFilters
-  
+  handleClearFilters,
+  opciones = { localidades: [], barrios: [], tipos: [] }
 }) => {
-  const barriosUnicos = ["Bajo La Viña", "Los Perales", "Centro", "Ciudad de Nieva", "Almirante Brown", 
-                        "Mariano Moreno", "Palpalá", "Cuyaya", "San Pedrito", "Alto Comedero", "Yala", "San Pablo de Reyes, San Antonio, Gorriti"];
+  // Fase 3: mismas listas que el filtro de desktop, salidas del catálogo de la
+  // base. Antes cada componente tenía su propia lista hardcodeada y no
+  // coincidían entre sí ("Moreno" acá era "Mariano Moreno", etc.).
+  const { localidades = [], barrios = [], tipos = [] } = opciones ?? {};
+
+  const barriosVisibles = formInputs.localidad
+    ? barrios.filter((b) => b.localidad_slug === formInputs.localidad)
+    : barrios;
 
   if (!isOpen) return null;
 
@@ -47,17 +53,35 @@ const MobileFiltersModal = ({
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          {/* Barrio */}
+          {/* Localidad */}
           <div>
-            <label className="text-xs font-bold uppercase text-gray-700 block mb-1">Barrio / Zona</label>
-            <select 
-              value={formInputs.barrio} 
-              onChange={(e) => handleInputChange("barrio", e.target.value)} 
+            <label className="text-xs font-bold uppercase text-gray-700 block mb-1">Localidad</label>
+            <select
+              value={formInputs.localidad}
+              onChange={(e) => handleInputChange("localidad", e.target.value)}
               className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-red-500"
             >
-              <option value="">Todas las zonas</option>
-              {barriosUnicos.map((b) => (
-                <option key={b} value={b}>{b}</option>
+              <option value="">Toda la provincia</option>
+              {localidades.map((l) => (
+                <option key={l.slug} value={l.slug}>{l.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Barrio */}
+          <div>
+            <label className="text-xs font-bold uppercase text-gray-700 block mb-1">Barrio</label>
+            <select
+              value={formInputs.barrio}
+              onChange={(e) => handleInputChange("barrio", e.target.value)}
+              disabled={barriosVisibles.length === 0}
+              className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">
+                {barriosVisibles.length === 0 ? "Sin barrios" : "Todos los barrios"}
+              </option>
+              {barriosVisibles.map((b) => (
+                <option key={b.slug} value={b.slug}>{b.label}</option>
               ))}
             </select>
           </div>
@@ -86,14 +110,14 @@ const MobileFiltersModal = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-bold uppercase text-gray-700 block mb-1">Tipo</label>
-              <select 
-                value={formInputs.tipo} 
-                onChange={(e) => handleInputChange("tipo", e.target.value)} 
+              <select
+                value={formInputs.tipo}
+                onChange={(e) => handleInputChange("tipo", e.target.value)}
                 className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-sm"
               >
                 <option value="">Todos</option>
-                {["Casa", "Terreno", "Departamento", "Local", "Galpon","Nave"].map(t => (
-                  <option key={t} value={t}>{t}</option>
+                {tipos.map((t) => (
+                  <option key={t.slug} value={t.slug}>{t.label}</option>
                 ))}
               </select>
             </div>

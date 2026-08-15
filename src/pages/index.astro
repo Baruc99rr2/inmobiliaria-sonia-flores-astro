@@ -3,9 +3,35 @@ import Layout from '../layouts/Layout.astro';
 import AppWrapper from '../components/AppWrapper.jsx';
 import Homepage from '../components/Homepage.jsx';
 import LoadingScreen from '../components/LoadingScreen.jsx';
+import {
+  getPublishedProducts,
+  CACHE_CONTROL,
+  HEADER_ORIGEN,
+  ORIGEN_SUPABASE,
+  ORIGEN_FALLBACK,
+} from '../lib/properties';
+
+// Fase 3: la página pasa a renderizarse por request para leer de Supabase.
+export const prerender = false;
+
+// Si la consulta falla, `products` queda null y los componentes caen al
+// fallback de data.jsx. El sitio nunca se queda sin propiedades.
+const products = await getPublishedProducts();
+
+// Si estamos sirviendo el fallback de data.jsx, no dejamos que el CDN cachee 60
+// segundos una respuesta degradada: en cuanto Supabase vuelva, queremos el dato
+// bueno.
+Astro.response.headers.set(
+  'Cache-Control',
+  products ? CACHE_CONTROL : 'public, max-age=0, must-revalidate'
+);
+
+// Vercel le saca s-maxage y stale-while-revalidate al Cache-Control antes de
+// mandarlo al browser, así que ese header no sirve para saber de dónde salieron
+// los datos. Este sí: Vercel no lo toca.
+Astro.response.headers.set(HEADER_ORIGEN, products ? ORIGEN_SUPABASE : ORIGEN_FALLBACK);
 
 const siteOrigin = Astro.url.origin;
-const currentUrl = Astro.url.href;
 const absoluteLogoUrl = `${siteOrigin}/SoniaLogo.png`;
 const title = "Inmobiliaria Sonia Flores | Propiedades en Jujuy";
 const description = "Encontrá tu próximo hogar en San Salvador de Jujuy. Alquiler y venta de casas, departamentos, terrenos y locales comerciales. Martillera Sonia Flores MP 177.";
@@ -18,6 +44,6 @@ const description = "Encontrá tu próximo hogar en San Salvador de Jujuy. Alqui
 >
   <AppWrapper client:load>
     <LoadingScreen client:load />
-    <Homepage client:load />
+    <Homepage client:load products={products} />
   </AppWrapper>
 </Layout>

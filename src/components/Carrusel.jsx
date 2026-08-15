@@ -154,9 +154,10 @@ const ProductCard = ({ product, dimensions, index, totalItems }) => {
 };
 
 // COMPONENTE PRINCIPAL CON ENTORNO 3D OPTIMIZADO
-const Carrusel = () => {
-  // Leemos directamente los datos importados
-  const products = productsData || [];
+const Carrusel = ({ products: productsProp }) => {
+  // Fase 3: los datos llegan por prop desde index.astro. `data.jsx` queda como
+  // fallback si la consulta a Supabase falla, hasta que se borre en la Fase 9.
+  const products = productsProp ?? productsData ?? [];
   const [activeIndex, setActiveIndex] = useState(0);
   const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
 

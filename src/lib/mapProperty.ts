@@ -16,6 +16,16 @@
  *     San Salvador de Jujuy, porque así está hoy y así lo comparan los filtros.
  *
  * Nada de "No tiene" todavía: eso es la Fase 3.5.
+ *
+ * ---
+ *
+ * AGREGADO EN LA FASE 3: además del shape legacy, `detalles` lleva tres claves
+ * nuevas —`localidad_slug`, `barrio_slug` y `tipo_slug`— que NO existen en
+ * `data.jsx`. Son puramente aditivas: ningún componente legacy las lee, así que
+ * no cambian nada de lo que se renderiza. Las usa el filtro de búsqueda, que
+ * pasó a comparar por slug en vez de por el texto visible. Esa es la corrección
+ * del bug que hacía que el filtro de barrio devolviera 0 resultados en 11 de sus
+ * 12 opciones.
  */
 
 /** Campos que el sitio público necesita. La Fase 3 usa exactamente este select. */
@@ -147,6 +157,18 @@ export function mapDbToProduct(row: any) {
       mapaQuery: row.mapa_query ?? '',
       lat: row.lat ?? null,
       lon: row.lon ?? null,
+
+      // --- Claves NUEVAS de la Fase 3, fuera del shape legacy ---
+      // Solo las consume el filtro de búsqueda. Comparar por slug elimina de
+      // raíz el problema de tildes, mayúsculas y del prefijo "Barrio ".
+      //
+      // Con la ubicación reservada (ids 12 y 19) el barrio queda en null, así
+      // que la propiedad no aparece al filtrar por ningún barrio. La localidad
+      // sí se expone: `hide_location` oculta barrio y calle, no la localidad, y
+      // el mapa ya apunta a la zona real (§2.2 del plan).
+      localidad_slug: row.localidades?.slug ?? null,
+      barrio_slug: row.hide_location ? null : (row.neighborhoods?.slug ?? null),
+      tipo_slug: row.property_types?.slug ?? null,
     },
   };
 }

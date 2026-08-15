@@ -2,6 +2,35 @@
 import Layout from '../layouts/Layout.astro';
 import AppWrapper from '../components/AppWrapper.jsx';
 import Busqueda from '../components/Busqueda/Busqueda.jsx';
+import {
+  getPublishedProducts,
+  getCatalogos,
+  CACHE_CONTROL,
+  HEADER_ORIGEN,
+  ORIGEN_SUPABASE,
+  ORIGEN_FALLBACK,
+} from '../lib/properties';
+
+// Fase 3: la página pasa a renderizarse por request para leer de Supabase.
+export const prerender = false;
+
+// Los catálogos alimentan los <select> de localidad, barrio y tipo. Antes las
+// listas estaban hardcodeadas —y eran distintas entre desktop y mobile—, que es
+// lo que hacía que el filtro de barrio no matcheara nunca.
+const [products, catalogos] = await Promise.all([
+  getPublishedProducts(),
+  getCatalogos(),
+]);
+
+// Si estamos sirviendo el fallback de data.jsx, no dejamos que el CDN cachee 60
+// segundos una respuesta degradada.
+Astro.response.headers.set(
+  'Cache-Control',
+  products ? CACHE_CONTROL : 'public, max-age=0, must-revalidate'
+);
+
+// Vercel normaliza el Cache-Control; este header no. Ver properties.ts.
+Astro.response.headers.set(HEADER_ORIGEN, products ? ORIGEN_SUPABASE : ORIGEN_FALLBACK);
 
 const title = "Búsqueda de Propiedades - Inmobiliaria Sonia Flores";
 const description = "Encontrá casas, departamentos, terrenos y locales comerciales en San Salvador de Jujuy. Filtrá por precio, barrio y tipo de propiedad.";
@@ -9,6 +38,6 @@ const description = "Encontrá casas, departamentos, terrenos y locales comercia
 
 <Layout title={title} description={description}>
   <AppWrapper client:load>
-    <Busqueda client:only="react" />
+    <Busqueda client:only="react" products={products} catalogos={catalogos} />
   </AppWrapper>
 </Layout>
