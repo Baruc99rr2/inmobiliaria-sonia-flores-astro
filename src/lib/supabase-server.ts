@@ -34,11 +34,24 @@
  * sirve `data.jsx` y sigue en pie.
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { diagnosticarCredenciales } from './debug-env';
 
-const supabaseUrl =
-  import.meta.env.PUBLIC_SUPABASE_URL ?? process.env.PUBLIC_SUPABASE_URL;
-const supabaseAnonKey =
-  import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? process.env.PUBLIC_SUPABASE_ANON_KEY;
+const urlBuild = import.meta.env.PUBLIC_SUPABASE_URL;
+const urlRuntime = process.env.PUBLIC_SUPABASE_URL;
+const keyBuild = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+const keyRuntime = process.env.PUBLIC_SUPABASE_ANON_KEY;
+
+const supabaseUrl = urlBuild ?? urlRuntime;
+const supabaseAnonKey = keyBuild ?? keyRuntime;
+
+// Permanente, detrás de DEBUG_SUPABASE=1. Ver el porqué en debug-env.ts.
+diagnosticarCredenciales({
+  contexto: 'cliente de servidor (supabase-server.ts)',
+  urlBuild,
+  urlRuntime,
+  keyBuild,
+  keyRuntime,
+});
 
 /** `null` si faltan las credenciales. Nunca tira. */
 export const supabaseServer: SupabaseClient | null =

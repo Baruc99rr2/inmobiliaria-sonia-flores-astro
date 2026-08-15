@@ -2,7 +2,13 @@
 import Layout from '../../layouts/Layout.astro';
 import ProductDetailsReact from '../../components/ProductDetailsReact.jsx';
 import PropiedadNoEncontrada from '../../components/PropiedadNoEncontrada.astro';
-import { getProductByLegacyId, CACHE_CONTROL } from '../../lib/properties';
+import {
+  getProductByLegacyId,
+  CACHE_CONTROL,
+  HEADER_ORIGEN,
+  ORIGEN_SUPABASE,
+  ORIGEN_FALLBACK,
+} from '../../lib/properties';
 import { productsData } from '../../data';
 
 // Fase 3: se cae `getStaticPaths`. Antes generaba 18 páginas fijas en el build,
@@ -30,6 +36,9 @@ const desdeFallback = !resultado.ok && product !== null;
 
 const siteOrigin = Astro.url.origin;
 const currentUrl = Astro.url.href;
+
+// Vercel normaliza el Cache-Control; este header no. Ver properties.ts.
+Astro.response.headers.set(HEADER_ORIGEN, desdeFallback ? ORIGEN_FALLBACK : ORIGEN_SUPABASE);
 
 if (product) {
   // Si estamos sirviendo el fallback, no dejamos que el CDN cachee 60 segundos

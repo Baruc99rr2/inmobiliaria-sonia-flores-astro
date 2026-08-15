@@ -233,6 +233,47 @@ slugs del catálogo.
 
 ---
 
+## 5.bis Vercel normaliza el `Cache-Control` — y por eso hay un header propio
+
+**Es normalización, no se pierde ninguna directiva.** La documentación de Vercel lo dice
+explícitamente:
+
+> *"If you set `Cache-Control` without a `CDN-Cache-Control`, the Vercel CDN strips
+> `s-maxage` and `stale-while-revalidate` from the response before sending it to the
+> browser. To determine if the response was served from the cache, check the
+> `x-vercel-cache` header in the response."*
+
+O sea: el CDN **consume** `s-maxage=60` y `stale-while-revalidate=300`, los aplica, y se
+los saca al header antes de mandarlo al browser. Por eso llega `cache-control: public` a
+secas mientras `x-vercel-cache: HIT` con `age: 5` confirma que el cacheo funciona. El
+comportamiento es el correcto y no hay nada que arreglar en el código.
+
+### Pero el indicador que documenté quedó inservible
+
+En §8 yo había dicho que se podía distinguir "lee de Supabase" de "está en fallback"
+mirando el `Cache-Control`. **Eso funciona en local y no funciona en Vercel**, justamente
+porque las dos variantes se normalizan a lo mismo.
+
+Reemplazado por un header propio, que Vercel no toca:
+
+```
+X-Datos-Origen: supabase             -> la página leyó de la base
+X-Datos-Origen: fallback-data-jsx    -> está sirviendo data.jsx
+```
+
+Se emite en las tres páginas. Para verificar producción:
+
+```
+curl -sI https://www.inmobiliariasoniaflores.com/ | grep -i x-datos-origen
+```
+
+> **Alternativa que NO tomé**: se podría mandar `CDN-Cache-Control` además de
+> `Cache-Control`, y ahí Vercel deja pasar el `Cache-Control` original al browser. No lo
+> hice porque cambia lo que cachea el browser respecto de lo que fijó el plan, y el
+> problema real era de observabilidad, no de cacheo. Queda anotado como opción.
+
+---
+
 ## 5. Cache-Control
 
 El header del plan se aplica en las tres páginas:
@@ -325,11 +366,71 @@ O sea que sirven las dos cosas, y ninguna reemplaza a la otra:
   otros 4 problemas reales.
 - Solo probar el bundle real con el entorno degradado atrapa esto.
 
-**Mi recomendación sobre la Fase 3.9**: ya la adelanté en lo esencial —`typescript@^6`,
-`@astrojs/check`, `@types/node`, script `npm run check`, 0 errores— porque contestar tu
-pregunta requería instalarlo igual. Lo que **no** hice, y sigue pendiente, es meterlo en
-el pipeline: correr `check` en el build o en CI para que no vuelva a acumularse deuda. Eso
-sí conviene resolverlo antes de la 3.5.
+**Fase 3.9 — cerrada.** El typecheck ahora corre en el pipeline:
+
+```json
+"build": "astro check && astro build",
+"check": "astro check",
+"build:sin-check": "astro build"
+```
+
+Vercel ejecuta `npm run build`, así que **un error de tipos frena el deploy**. Verifiqué
+que `astro check` devuelve exit code 1 ante un error, metiendo un `.astro` roto a
+propósito y confirmando que corta la cadena. Queda `build:sin-check` como escotilla para
+cuando haga falta buildear sin el gate.
+
+---
+
+## 6.ter Diagnóstico permanente de credenciales
+
+Motivado por el incidente de la publishable key mal cargada en Vercel (`Ql` con ele
+minúscula en vez de `QI` con i mayúscula), que costó tres redeploys porque **el sitio
+parecía andar**: caía al fallback y servía `data.jsx`.
+
+Se activa con `DEBUG_SUPABASE=1`, **sin** prefijo `PUBLIC_`: se lee de `process.env` en
+runtime, así que alcanza con redeployar para prenderlo, y nunca viaja al browser.
+
+```
+[debug-supabase] cliente de servidor (supabase-server.ts)
+  URL   : https://optpcrcqrbklznpiujbf.supabase.co
+  origen: runtime (process.env)
+  key   : sb_p...N--U (46 chars, huella 933d1e1f)
+  origen: runtime (process.env)
+```
+
+El campo `origen` distingue si el valor vino **inlineado en el build** o **del entorno en
+runtime**. Es lo que permite detectar el problema del build cacheado de §8.
+
+### Por qué no alcanzaba con el largo y los extremos
+
+Pediste largo y primeros/últimos 4 caracteres. Lo probé contra el typo real y **no lo
+detecta**:
+
+| | largo | extremos | huella |
+|---|---|---|---|
+| clave buena | 46 | `sb_p...N--U` | `933d1e1f` |
+| clave con el typo | 46 | `sb_p...N--U` | `62a06e2a` |
+
+El carácter cambiado estaba en el medio, así que las dos se ven idénticas. Por eso agregué
+una **huella FNV-1a de 32 bits**: cambia entera ante un solo carácter distinto y no
+permite reconstruir el original. Es sin `node:crypto` a propósito, para que el helper
+también sirva del lado del browser en la Fase 4.
+
+### Y el mensaje que realmente ahorra los redeploys
+
+Cuando Supabase rechaza una consulta con algo que suena a credencial (`Invalid API key`,
+`JWT`, `unauthorized`, `permission denied`), se loguea **siempre**, sin necesidad de
+prender el debug:
+
+```
+[supabase] getPublishedProducts: "Invalid API key". Esto suele ser la publishable key
+mal cargada, no un problema de la consulta. Prendé DEBUG_SUPABASE=1 y comparala
+carácter por carácter con la de Supabase > Project Settings > API Keys.
+```
+
+> ⚠️ Este diagnóstico es **solo para la publishable key**, que es pública por diseño. La
+> `SUPABASE_SERVICE_ROLE_KEY` no pasa por acá y no debe pasar: saltea RLS, y no vale la
+> pena filtrar ni una pista de ella en los logs.
 
 ---
 
@@ -363,11 +464,16 @@ RLS.
 El detalle incómodo es que **el fallback hace que la falta de variables no se note**: el
 sitio va a andar igual, con los datos de `data.jsx`. Para distinguir un caso del otro,
 mirá la ficha **`/propiedades/19`** o filtrá por **Chijra**: las dos cosas funcionan con
-`data.jsx`, así que no sirven. El indicador confiable es el header:
+`data.jsx`, así que no sirven.
+
+~~El indicador confiable es el `Cache-Control`.~~ **Ya no**: Vercel lo normaliza y las dos
+variantes llegan iguales al browser. Ver §5.bis. El indicador correcto es:
 
 ```
-Cache-Control: public, s-maxage=60, stale-while-revalidate=300   -> lee de Supabase
-Cache-Control: public, max-age=0, must-revalidate                -> está en fallback
+curl -sI https://www.inmobiliariasoniaflores.com/ | grep -i x-datos-origen
+
+X-Datos-Origen: supabase             -> lee de la base
+X-Datos-Origen: fallback-data-jsx    -> está en fallback
 ```
 
 ### Cuidado con el build cacheado de Vercel

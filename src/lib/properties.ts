@@ -13,10 +13,28 @@
  * fallback de `data.jsx`. Un error de red no puede dejar el sitio en blanco.
  */
 import { supabaseServer } from './supabase-server';
+import { diagnosticarErrorDeConsulta } from './debug-env';
 import { PROPERTY_SELECT, mapDbToProduct, mapDbToProducts } from './mapProperty';
 
-/** Cabecera de cache que pide el plan v5 §7/Fase 3. */
+/**
+ * Cabecera de cache que pide el plan v5 §7/Fase 3.
+ *
+ * OJO con lo que se ve en el browser: Vercel **normaliza este header**. Su
+ * documentación dice que "if you set Cache-Control without a CDN-Cache-Control,
+ * the Vercel CDN strips s-maxage and stale-while-revalidate from the response
+ * before sending it to the browser". O sea que el CDN consume las directivas y
+ * al cliente le llega `cache-control: public` a secas. El cacheo funciona igual
+ * — se comprueba con `x-vercel-cache: HIT` y el header `age` —, pero NO sirve
+ * mirar `cache-control` para saber si la página leyó de Supabase.
+ *
+ * Para eso está `X-Datos-Origen`, más abajo.
+ */
 export const CACHE_CONTROL = 'public, s-maxage=60, stale-while-revalidate=300';
+
+/** Header propio para saber de dónde salieron los datos. Vercel no lo toca. */
+export const HEADER_ORIGEN = 'X-Datos-Origen';
+export const ORIGEN_SUPABASE = 'supabase';
+export const ORIGEN_FALLBACK = 'fallback-data-jsx';
 
 export type Catalogos = {
   localidades: { slug: string; label: string }[];
@@ -40,6 +58,7 @@ export async function getPublishedProducts() {
 
   if (error) {
     console.error('[properties] getPublishedProducts:', error.message);
+    diagnosticarErrorDeConsulta('getPublishedProducts', error.message);
     return null;
   }
   if (!data || data.length === 0) {
@@ -77,6 +96,7 @@ export async function getProductByLegacyId(legacyId: number) {
 
   if (error) {
     console.error('[properties] getProductByLegacyId:', error.message);
+    diagnosticarErrorDeConsulta('getProductByLegacyId', error.message);
     return { ok: false, product: null };
   }
 
