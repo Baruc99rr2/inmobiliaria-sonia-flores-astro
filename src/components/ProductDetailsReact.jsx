@@ -1,19 +1,32 @@
 import React, { useState } from 'react';
-import { BiChevronLeft, BiChevronRight, BiBed, BiArea, BiHomeAlt, BiCar, BiWater, BiBlanket, BiBuildingHouse, BiMap, BiShareAlt, BiLogoWhatsapp, BiLogoFacebook, BiLogoInstagram } from 'react-icons/bi';
+import { BiChevronLeft, BiChevronRight, BiBed, BiArea, BiHomeAlt, BiCar, BiWater, BiBlanket, BiBuildingHouse, BiWifi, BiShareAlt, BiLogoWhatsapp, BiLogoFacebook, BiLogoInstagram } from 'react-icons/bi';
 import { IoMdClose } from 'react-icons/io';
 import { MdOutlineBathtub, MdLocationOn, MdOutlineLocalDrink, MdOutlineElectricBolt, MdOutlineGasMeter, MdFullscreen } from 'react-icons/md';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { formatTriEstado, formatMedida, formatUbicacion, etiquetaZona } from '../lib/format';
 
+// Las claves tienen que coincidir con los labels del catálogo `services`
+// (§5.3 del plan): Agua, Luz, Gas, Cloaca, Pavimento, Wifi.
+//
+// Antes estaban mapeadas a nombres viejos —'Agua Potable', 'Gas Natural',
+// 'Electricidad', 'Internet'— que ya no existen en el dato, así que cuatro de
+// los seis servicios caían al ícono genérico de manta.
+//
+// La clave se normaliza a minúsculas al buscar, para que un cambio de mayúsculas
+// en el catálogo no vuelva a romper el mapeo.
 const serviceIcons = {
-    'Agua Potable': <MdOutlineLocalDrink />,
-    'Cloaca': <BiWater />,
-    'Gas Natural': <MdOutlineGasMeter />,
-    'Electricidad': <MdOutlineElectricBolt />,
-    'Pavimento': <BiBuildingHouse />,
-    'Internet': <BiMap />,
+    agua: <MdOutlineLocalDrink />,
+    luz: <MdOutlineElectricBolt />,
+    gas: <MdOutlineGasMeter />,
+    cloaca: <BiWater />,
+    pavimento: <BiBuildingHouse />,
+    wifi: <BiWifi />,
 };
+
+const iconoDeServicio = (nombre) =>
+    serviceIcons[String(nombre ?? '').trim().toLowerCase()] ?? <BiBlanket />;
 
 const ProductDetailsReact = ({ product, currentUrl }) => {
     const [currentImgIndex, setCurrentImgIndex] = useState(0);
@@ -32,18 +45,23 @@ const ProductDetailsReact = ({ product, currentUrl }) => {
     const prevImage = (e) => { e?.stopPropagation(); setCurrentImgIndex(prev => prev === 0 ? imagesList.length - 1 : prev - 1); };
     const nextImage = (e) => { e?.stopPropagation(); setCurrentImgIndex(prev => prev === imagesList.length - 1 ? 0 : prev + 1); };
 
+    // Tri-estado (§2.3): NULL -> "A consultar" | 0 -> "No tiene" | n -> el número.
+    // La superficie usa `formatMedida` porque no admite "No tiene": toda
+    // propiedad tiene superficie, solo puede desconocerse.
     const specs = [
-        { icon: <BiBuildingHouse />, label: 'Tipo', value: product.detalles?.tipo || '-' },
-        { icon: <BiHomeAlt />, label: 'Ambientes', value: product.detalles?.ambientes || '-' },
-        { icon: <BiBed />, label: 'Dormitorios', value: product.detalles?.dormitorios || '-' },
-        { icon: <MdOutlineBathtub />, label: 'Baños', value: product.detalles?.banos || '-' },
-        { icon: <BiArea />, label: 'm² Cubiertos', value: product.detalles?.superficie_m2 || '-' },
-        { icon: <BiCar />, label: 'Cocheras', value: product.detalles?.cocheras || '0' },
+        { icon: <BiBuildingHouse />, label: 'Tipo', value: product.detalles?.tipo || 'A consultar' },
+        { icon: <BiHomeAlt />, label: 'Ambientes', value: formatTriEstado(product.detalles?.ambientes) },
+        { icon: <BiBed />, label: 'Dormitorios', value: formatTriEstado(product.detalles?.dormitorios) },
+        { icon: <MdOutlineBathtub />, label: 'Baños', value: formatTriEstado(product.detalles?.banos) },
+        { icon: <BiArea />, label: 'm² Cubiertos', value: formatMedida(product.detalles?.superficie_m2, 'm²') },
+        { icon: <BiCar />, label: 'Cocheras', value: formatTriEstado(product.detalles?.cocheras) },
     ];
+
+    const ubicacion = formatUbicacion(product.detalles);
 
     const serviciosDisponibles = product.detalles?.servicios || [];
     const serviciosGrid = serviciosDisponibles.map(servicio => ({
-        icon: serviceIcons[servicio] || <BiBlanket />,
+        icon: iconoDeServicio(servicio),
         label: servicio,
     }));
 
@@ -145,7 +163,7 @@ const ProductDetailsReact = ({ product, currentUrl }) => {
                     <div className="bg-white p-5 sm:p-8 rounded-2xl border border-gray-100 shadow-sm">
                         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                             <div className="flex items-center gap-2 text-red-600 font-bold text-sm uppercase">
-                                <MdLocationOn /> {product.detalles?.barrio}
+                                <MdLocationOn /> {etiquetaZona(product.detalles)}
                                 <span className='bg-gray-100 text-gray-600 px-3 py-1 ml-2 rounded-full text-xs font-medium'>
                                     {product.category}
                                 </span>
@@ -223,13 +241,18 @@ const ProductDetailsReact = ({ product, currentUrl }) => {
                             </button>
                         </div>
 
+                        {/* Antes esto concatenaba barrio + calle + numero sin ninguna
+                            condición, y con la ubicación reservada imprimía
+                            "A consultar, A consultar, Jujuy, Argentina". */}
                         <div className="p-5 flex items-start gap-3 text-gray-700 border-t border-gray-100">
                             <MdLocationOn className="text-red-600 text-2xl mt-0.5 flex-shrink-0" />
                             <div className="text-sm leading-tight">
-                                {product.detalles?.barrio || ''}, 
-                                {product.detalles?.calle ? ` ${product.detalles.calle}` : ''}
-                                {product.detalles?.numero ? ` ${product.detalles.numero}` : ''}, 
-                                Jujuy, Argentina
+                                <p>{ubicacion.texto}</p>
+                                {ubicacion.reservada && (
+                                    <p className="text-gray-500 text-xs mt-1">
+                                        La dirección exacta se reserva. Consultanos y te la pasamos.
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </div>

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { MdLocationOn, MdBed, MdBathtub, MdSquareFoot, MdChevronLeft, MdChevronRight } from 'react-icons/md';
+import { chipTriEstado, chipMedida, etiquetaZona } from '../../lib/format';
 
 const PropertySearchCard = ({ 
   product, 
@@ -99,7 +100,7 @@ const PropertySearchCard = ({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1 text-[11px] max-[320px]:text-[10px] font-semibold text-gray-400 uppercase truncate">
               <MdLocationOn className="text-red-500 flex-shrink-0" />
-              {product?.detalles?.barrio || "Ubicación"}
+              {etiquetaZona(product?.detalles)}
             </div>
             <span className="text-[10px] max-[320px]:text-[9px] font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded uppercase">
               {product?.detalles?.tipo || "Inmueble"}
@@ -110,15 +111,30 @@ const PropertySearchCard = ({
             {product?.name}
           </h3>
 
-          <div className="flex items-center gap-4 text-xs max-[320px]:text-[13px] text-gray-600">
-            {!isTerreno && (
-              <>
-                <span className="flex items-center gap-1"><MdBed className="text-xl max-[320px]:text-lg" /> {product?.detalles?.dormitorios || 0}</span>
-                <span className="flex items-center gap-1"><MdBathtub className="text-xl max-[320px]:text-lg" /> {product?.detalles?.banos || 0}</span>
-              </>
-            )}
-            <span className="flex items-center gap-1"><MdSquareFoot className="text-xl max-[320px]:text-lg" /> {product?.detalles?.superficie_m2 || 0}</span>
-          </div>
+          {/* Chips compactos: se omite el chip ENTERO cuando no hay dato (§2.3).
+              Antes `|| 0` mostraba "0" sobre propiedades sin dato, y el texto
+              "a consultar" en minúscula al lado del ícono de metros. */}
+          {(() => {
+            const chips = [];
+            if (!isTerreno) {
+              const dorm = chipTriEstado(product?.detalles?.dormitorios);
+              const banos = chipTriEstado(product?.detalles?.banos);
+              if (dorm !== null) chips.push({ icono: <MdBed className="text-xl max-[320px]:text-lg" />, valor: dorm });
+              if (banos !== null) chips.push({ icono: <MdBathtub className="text-xl max-[320px]:text-lg" />, valor: banos });
+            }
+            const sup = chipMedida(product?.detalles?.superficie_m2);
+            if (sup !== null) chips.push({ icono: <MdSquareFoot className="text-xl max-[320px]:text-lg" />, valor: `${sup} m²` });
+
+            if (chips.length === 0) return null;
+
+            return (
+              <div className="flex items-center gap-4 text-xs max-[320px]:text-[13px] text-gray-600">
+                {chips.map((c, i) => (
+                  <span key={i} className="flex items-center gap-1">{c.icono} {c.valor}</span>
+                ))}
+              </div>
+            );
+          })()}
         </div>
         
         <div className="flex items-center justify-between mt-4">

@@ -9,6 +9,7 @@ import { RippleButton, RippleButtonRipples } from './RippleButton';
 
 // 1. IMPORTACIÓN DEL FONDO DESDE TU RUTA REAL
 import { BubbleBackground } from './bubble';
+import { etiquetaZona } from '../lib/format';
 
 // 2. TU COMPONENTE EXACTO optimizado para desactivar interactividad si es móvil
 const BubbleBackgroundDemo = ({ interactive }) => {
@@ -118,9 +119,9 @@ const ProductCard = ({ product, dimensions, index, totalItems }) => {
           <h4 className="text-xs md:text-base font-semibold text-white drop-shadow-md line-clamp-2 leading-tight">
             {product.name}
           </h4>
-          {product.detalles?.barrio && (
+          {product.detalles && (
             <p className="text-[10px] md:text-[11px] text-gray-300 flex items-center gap-0.5 mt-1">
-              <MdLocationOn className="text-red-500 text-xs" /> {product.detalles.barrio}
+              <MdLocationOn className="text-red-500 text-xs" /> {etiquetaZona(product.detalles)}
             </p>
           )}
           <p className="text-xs md:text-sm font-bold text-red-400 mt-1">

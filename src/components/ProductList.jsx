@@ -8,6 +8,7 @@ import {
 } from 'react-icons/bi';
 import { Swiper, SwiperSlide } from "swiper/react";
 import { EffectCoverflow, Pagination, Mousewheel } from "swiper/modules";
+import { chipTriEstado, chipMedida, etiquetaZona } from "../lib/format";
 
 import "swiper/css";
 import "swiper/css/effect-coverflow";
@@ -76,16 +77,33 @@ const ProductCard = ({ product }) => {
         
         <div className="text-left px-0.5 select-none mb-3">
           <div className="flex items-start justify-between gap-2 mb-1">
-            <span className="text-xs font-semibold text-gray-400 truncate max-w-[70%]">{product.detalles?.barrio || "Ubicación no especificada"}</span>
+            <span className="text-xs font-semibold text-gray-400 truncate max-w-[70%]">{etiquetaZona(product.detalles)}</span>
             <span className="text-xs font-medium text-gray-800 bg-gray-100 px-2 py-0.5 rounded shrink-0">{product.detalles?.tipo || "Inmueble"}</span>
           </div>
           <h4 className="property-card-title text-sm md:text-base font-bold text-gray-900 line-clamp-1 leading-tight mb-1 transition-colors duration-300">{product.name}</h4>
           
-          <div className="flex items-center gap-3 text-xs text-gray-500 my-2 py-1 border-b border-gray-100/70">
-            <span className="flex items-center gap-1"><BiBed className="text-sm text-gray-600" /> <span className="font-medium">{product.detalles?.dormitorios || 0} Dorm.</span></span>
-            <span className="flex items-center gap-1"><MdOutlineBathtub className="text-sm text-gray-600" /> <span className="font-medium">{product.detalles?.banos || 0} Baños</span></span>
-            <span className="flex items-center gap-1"><BiArea className="text-sm text-gray-600" /> <span className="font-medium">{product.detalles?.superficie_m2 || 0} m²</span></span>
-          </div>
+          {/* Chips compactos: cuando no hay dato se omite el chip ENTERO, ícono
+              incluido (§2.3). Antes `|| 0` imprimía "0 Dorm." sobre propiedades
+              sin dato, y "a consultar m²" cuando el valor era el centinela. */}
+          {(() => {
+            const chips = [
+              { icono: <BiBed className="text-sm text-gray-600" />, valor: chipTriEstado(product.detalles?.dormitorios), sufijo: 'Dorm.' },
+              { icono: <MdOutlineBathtub className="text-sm text-gray-600" />, valor: chipTriEstado(product.detalles?.banos), sufijo: 'Baños' },
+              { icono: <BiArea className="text-sm text-gray-600" />, valor: chipMedida(product.detalles?.superficie_m2), sufijo: 'm²' },
+            ].filter((c) => c.valor !== null);
+
+            if (chips.length === 0) return null;
+
+            return (
+              <div className="flex items-center gap-3 text-xs text-gray-500 my-2 py-1 border-b border-gray-100/70">
+                {chips.map((c, i) => (
+                  <span key={i} className="flex items-center gap-1">
+                    {c.icono} <span className="font-medium">{c.valor} {c.sufijo}</span>
+                  </span>
+                ))}
+              </div>
+            );
+          })()}
           <div className="text-base font-bold text-gray-900 mt-1"><span className="font-extrabold text-lg text-gray-900">{priceText}</span></div>
         </div>
       </div>

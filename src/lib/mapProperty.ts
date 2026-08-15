@@ -169,6 +169,14 @@ export function mapDbToProduct(row: any) {
       localidad_slug: row.localidades?.slug ?? null,
       barrio_slug: row.hide_location ? null : (row.neighborhoods?.slug ?? null),
       tipo_slug: row.property_types?.slug ?? null,
+
+      // --- Claves NUEVAS de la Fase 3.5, también fuera del shape legacy ---
+      // `hide_location` es la señal explícita de ubicación reservada. Hasta
+      // ahora el único indicio era que `barrio` y `calle` dijeran 'A consultar',
+      // un centinela que además se filtraba a la vista pública.
+      // `localidad` permite mostrar algo útil sin revelar barrio ni calle.
+      hide_location: Boolean(row.hide_location),
+      localidad: row.localidades?.label ?? '',
     },
   };
 }
