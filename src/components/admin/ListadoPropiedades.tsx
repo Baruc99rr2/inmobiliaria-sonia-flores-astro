@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { SearchIcon, AlertTriangleIcon, Trash2Icon } from 'lucide-react';
+import { SearchIcon, AlertTriangleIcon, Trash2Icon, PencilIcon, PlusIcon } from 'lucide-react';
 import { Badge } from '@/components/admin/ui/badge';
 import { Switch } from '@/components/admin/ui/switch';
 import { Input } from '@/components/admin/ui/input';
@@ -202,6 +202,14 @@ export default function ListadoPropiedades() {
         </Alert>
       )}
 
+      <Button
+        className="self-start"
+        onClick={() => (window.location.href = '/admin/propiedades/nueva')}
+      >
+        <PlusIcon />
+        Cargar una propiedad
+      </Button>
+
       {/* Filtros */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative flex-1">
@@ -322,16 +330,28 @@ export default function ListadoPropiedades() {
                   )}
                 </div>
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setAEliminar(p)}
-                  disabled={guardando.has(p.id)}
-                  className="ml-auto text-destructive hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2Icon />
-                  Eliminar
-                </Button>
+                <div className="ml-auto flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => (window.location.href = `/admin/propiedades/${p.id}`)}
+                    disabled={guardando.has(p.id)}
+                  >
+                    <PencilIcon />
+                    Editar
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setAEliminar(p)}
+                    disabled={guardando.has(p.id)}
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2Icon />
+                    Eliminar
+                  </Button>
+                </div>
               </div>
 
               {errorFila[p.id] && (
