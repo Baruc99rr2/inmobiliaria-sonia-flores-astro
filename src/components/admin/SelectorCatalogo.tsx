@@ -69,7 +69,11 @@ export default function SelectorCatalogo({
           value={valor ?? ''}
           onChange={(e) => onCambio(e.target.value ? Number(e.target.value) : null)}
           disabled={deshabilitado}
-          className="h-9 flex-1 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50"
+          /* `disabled:bg-muted` además del opacity: en tema claro el 50% de
+             opacidad solo lo deja pálido (1.96:1, el número flojo de la Fase
+             5.5) y se confunde con un campo vacío. Con fondo gris se lee como
+             apagado. */
+          className="h-9 flex-1 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60"
         >
           <option value="">{textoVacio}</option>
           {opciones.map((o) => (
