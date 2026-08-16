@@ -1,16 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
-import { SearchIcon, AlertTriangleIcon } from 'lucide-react';
+import { SearchIcon, AlertTriangleIcon, Trash2Icon } from 'lucide-react';
 import { Badge } from '@/components/admin/ui/badge';
 import { Switch } from '@/components/admin/ui/switch';
 import { Input } from '@/components/admin/ui/input';
+import { Button } from '@/components/admin/ui/button';
 import { Alert, AlertDescription } from '@/components/admin/ui/alert';
 import { Skeleton } from '@/components/admin/ui/skeleton';
+import DialogoEliminar from '@/components/admin/DialogoEliminar';
 import {
   listarPropiedades,
   cambiarPublicado,
   cambiarEstado,
+  archivarPropiedad,
   type PropiedadListado,
   type EstadoPropiedad,
+  type Capacidades,
 } from '@/lib/admin/propiedades';
 
 /**
@@ -30,11 +34,15 @@ const OPERACIONES = [
   { valor: 'venta', etiqueta: 'Solo venta' },
 ];
 
-const ESTADOS: Array<{ valor: EstadoPropiedad; etiqueta: string }> = [
-  { valor: 'disponible', etiqueta: 'Disponible' },
-  { valor: 'alquilada', etiqueta: 'Alquilada' },
-  { valor: 'vendida', etiqueta: 'Vendida' },
-];
+/**
+ * El texto del toggle cambia según la operación. La dueña no piensa en
+ * "estados": piensa en que la casa ya se alquiló o el terreno ya se vendió.
+ */
+const textoNoDisponible = (operacion: PropiedadListado['operation']) =>
+  operacion === 'alquiler' ? 'Ya se alquiló' : 'Ya se vendió';
+
+const estadoParaOperacion = (operacion: PropiedadListado['operation']): EstadoPropiedad =>
+  operacion === 'alquiler' ? 'alquilada' : 'vendida';
 
 const PUBLICACION = [
   { valor: '', etiqueta: 'Publicadas y borradores' },
@@ -55,7 +63,9 @@ export default function ListadoPropiedades() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [propiedades, setPropiedades] = useState<PropiedadListado[]>([]);
-  const [conEstado, setConEstado] = useState(true);
+  const [caps, setCaps] = useState<Capacidades>({ estado: true, archivado: true });
+  const [aEliminar, setAEliminar] = useState<PropiedadListado | null>(null);
+  const [eliminando, setEliminando] = useState(false);
 
   const [busqueda, setBusqueda] = useState('');
   const [operacion, setOperacion] = useState('');
@@ -72,7 +82,7 @@ export default function ListadoPropiedades() {
       if (!vigente) return;
       if (r.ok) {
         setPropiedades(r.propiedades);
-        setConEstado(r.conEstado);
+        setCaps(r.capacidades);
       } else {
         setError(r.error);
       }
@@ -109,13 +119,16 @@ export default function ListadoPropiedades() {
     marcarGuardando(p.id, false);
   };
 
-  const cambiarEstadoDe = async (p: PropiedadListado, estado: EstadoPropiedad) => {
+  const alternarDisponible = async (p: PropiedadListado) => {
     const anterior = p.estado;
+    const nuevo: EstadoPropiedad =
+      p.estado === 'disponible' ? estadoParaOperacion(p.operation) : 'disponible';
+
     marcarGuardando(p.id, true);
     setErrorFila((e) => ({ ...e, [p.id]: '' }));
-    setPropiedades((prev) => prev.map((x) => (x.id === p.id ? { ...x, estado } : x)));
+    setPropiedades((prev) => prev.map((x) => (x.id === p.id ? { ...x, estado: nuevo } : x)));
 
-    const r = await cambiarEstado(p.id, estado);
+    const r = await cambiarEstado(p.id, nuevo);
     if (!r.ok) {
       setPropiedades((prev) =>
         prev.map((x) => (x.id === p.id ? { ...x, estado: anterior } : x))
@@ -123,6 +136,21 @@ export default function ListadoPropiedades() {
       setErrorFila((e) => ({ ...e, [p.id]: r.error }));
     }
     marcarGuardando(p.id, false);
+  };
+
+  const confirmarEliminar = async () => {
+    if (!aEliminar) return;
+    setEliminando(true);
+
+    const r = await archivarPropiedad(aEliminar.id);
+    if (r.ok) {
+      setPropiedades((prev) => prev.filter((x) => x.id !== aEliminar.id));
+      setAEliminar(null);
+    } else {
+      setErrorFila((e) => ({ ...e, [aEliminar.id]: r.error }));
+      setAEliminar(null);
+    }
+    setEliminando(false);
   };
 
   const filtradas = useMemo(() => {
@@ -160,14 +188,15 @@ export default function ListadoPropiedades() {
 
   return (
     <div className="flex flex-col gap-4">
-      {!conEstado && (
+      {(!caps.estado || !caps.archivado) && (
         <Alert>
           <AlertDescription className="flex items-start gap-2">
             <AlertTriangleIcon className="size-4 mt-0.5 shrink-0" />
             <span>
-              Todavía no se puede marcar una propiedad como alquilada o vendida. Falta
-              agregar ese campo en la base:{' '}
-              <code className="text-xs">scripts/fase6-estado-propiedad.sql</code>.
+              Falta preparar la base para algunas acciones. Avisale al desarrollador:{' '}
+              {!caps.estado && <code className="text-xs">fase6-estado-propiedad.sql</code>}
+              {!caps.estado && !caps.archivado && ' y '}
+              {!caps.archivado && <code className="text-xs">fase6-archivar-propiedad.sql</code>}.
             </span>
           </AlertDescription>
         </Alert>
@@ -242,9 +271,9 @@ export default function ListadoPropiedades() {
                     <Badge variant="outline">
                       {p.operation === 'alquiler' ? 'Alquiler' : 'Venta'}
                     </Badge>
-                    {conEstado && p.estado !== 'disponible' && (
-                      <Badge variant="outline">
-                        {p.estado === 'alquilada' ? 'Alquilada' : 'Vendida'}
+                    {caps.estado && p.estado !== 'disponible' && (
+                      <Badge variant="outline" className="border-destructive/40 text-destructive">
+                        {p.estado === 'alquilada' ? 'Ya se alquiló' : 'Ya se vendió'}
                       </Badge>
                     )}
                     {p.legacy_id !== null && (
@@ -264,34 +293,45 @@ export default function ListadoPropiedades() {
                 </div>
               </div>
 
-              {/* Acciones. En una fila aparte para que en el celular no compitan
-                  con el texto por el ancho. */}
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t pt-3">
-                <label className="flex items-center gap-2 text-sm">
-                  <Switch
-                    checked={p.published}
-                    onCheckedChange={() => alternarPublicado(p)}
-                    disabled={guardando.has(p.id)}
-                    aria-label={p.published ? 'Despublicar' : 'Publicar'}
-                  />
-                  <span>{p.published ? 'Visible en la web' : 'No se muestra'}</span>
-                </label>
-
-                {conEstado && (
+              {/* Acciones, en una fila aparte para que en el celular no compitan
+                  con el texto por el ancho. Los dos toggles van juntos a la
+                  izquierda; eliminar va SEPARADO a la derecha y con otro estilo,
+                  para que no se toque por error al buscar un switch. */}
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-3 border-t pt-3">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                   <label className="flex items-center gap-2 text-sm">
-                    <span className="text-muted-foreground">Estado</span>
-                    <select
-                      value={p.estado}
-                      onChange={(e) => cambiarEstadoDe(p, e.target.value as EstadoPropiedad)}
+                    <Switch
+                      checked={p.published}
+                      onCheckedChange={() => alternarPublicado(p)}
                       disabled={guardando.has(p.id)}
-                      className={claseSelect + ' h-8 w-auto disabled:opacity-50'}
-                    >
-                      {ESTADOS.map((e) => (
-                        <option key={e.valor} value={e.valor}>{e.etiqueta}</option>
-                      ))}
-                    </select>
+                      aria-label={p.published ? 'Despublicar' : 'Publicar'}
+                    />
+                    <span>{p.published ? 'Visible en la web' : 'No se muestra'}</span>
                   </label>
-                )}
+
+                  {caps.estado && (
+                    <label className="flex items-center gap-2 text-sm">
+                      <Switch
+                        checked={p.estado !== 'disponible'}
+                        onCheckedChange={() => alternarDisponible(p)}
+                        disabled={guardando.has(p.id)}
+                        aria-label={textoNoDisponible(p.operation)}
+                      />
+                      <span>{textoNoDisponible(p.operation)}</span>
+                    </label>
+                  )}
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAEliminar(p)}
+                  disabled={guardando.has(p.id)}
+                  className="ml-auto text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2Icon />
+                  Eliminar
+                </Button>
               </div>
 
               {errorFila[p.id] && (
@@ -303,6 +343,16 @@ export default function ListadoPropiedades() {
           ))}
         </ul>
       )}
+
+      <DialogoEliminar
+        abierto={aEliminar !== null}
+        onCambio={(abierto) => {
+          if (!abierto && !eliminando) setAEliminar(null);
+        }}
+        titulo={aEliminar?.name ?? ''}
+        eliminando={eliminando}
+        onConfirmar={confirmarEliminar}
+      />
     </div>
   );
 }

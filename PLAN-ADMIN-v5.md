@@ -569,7 +569,57 @@ Después `npx shadcn@latest init`, `/admin/login`, guard, ícono discreto en el 
 
 **Fase 5 — Shell del panel.** `npx shadcn@latest add sidebar-07`, borrar lo de ejemplo, aplicar la paleta. Español rioplatense. *Verificación: responsive en celular.*
 
-**Fase 6 — CRUD.** Listado con búsqueda y toggle publicado. Formulario según §8. Alta como borrador. *Verificación: ciclo completo probando los tres estados de un campo numérico.*
+**Fase 6 — CRUD.** Se hace en sub-fases, con un commit y una verificación cada una:
+
+| | Alcance |
+|---|---|
+| **6a** | Listado: búsqueda, filtro por operación y por publicación, toggle de publicado, estado comercial y archivado |
+| **6b** | Formulario: textos y selects (título, descripción, requisitos con "insertar texto estándar", operación, tipo/localidad/barrio con "agregar nuevo", precio + switches) |
+| **6c** | Campos numéricos con el tri-estado de §8 |
+| **6d** | Servicios, adicionales y dirección con switches de visibilidad |
+| **6e** | Mapa Leaflet con marcador arrastrable |
+| **6.6** | Sitio público: ordenar disponibles primero y marcar las no disponibles |
+
+Alta como borrador (`published = false`). Publicar es un botón aparte y explícito.
+
+*Verificación: ciclo crear → publicar → ver → editar → despublicar, probando los tres estados de un campo numérico.*
+
+#### Estado comercial y archivado (6a)
+
+Dos columnas nuevas, cada una con su script para correr a mano en Supabase:
+
+| Columna | Script | Para qué |
+|---|---|---|
+| `estado` (`disponible` / `alquilada` / `vendida`) | `scripts/fase6-estado-propiedad.sql` | Marcar que ya se alquiló o se vendió, sin ensuciar el título |
+| `archived_at` | `scripts/fase6-archivar-propiedad.sql` | "Eliminar" sin borrar: la fila queda y se puede recuperar |
+
+**Por qué `estado` y no el título.** Antes esto se hacía escribiendo `-ALQUILADA-` en el
+nombre, lo que ensuciaba el título en la web, en Google y en lo que se comparte por
+WhatsApp. El script migra las dos propiedades que lo tenían y les limpia el prefijo.
+
+**En el panel, dos acciones separadas:**
+
+1. **Toggle "ya no está disponible"**, con la etiqueta según la operación: *"Ya se alquiló"*
+   para alquiler, *"Ya se vendió"* para venta. Sin vocabulario técnico. Reversible, igual
+   que el de publicado.
+2. **Eliminar**, que en realidad **archiva**. Para la dueña la experiencia es la misma:
+   toca eliminar y desaparece. Por dentro es un `UPDATE` de `archived_at`, recuperable con
+   otro `UPDATE`.
+
+**El borrado accidental es un riesgo real**, porque va a usar esto desde el celular. Por
+eso: el botón de eliminar **no va pegado a los toggles**, y el diálogo exige más que un
+"Aceptar" — muestra el título de la propiedad y pide una confirmación deliberada aparte.
+
+> **El filtro de archivadas va en RLS, no solo en la consulta.** Si una propiedad archivada
+> quedara con `published = true`, filtrar únicamente del lado del cliente la dejaría
+> visible para cualquiera que arme la consulta a mano. El script recrea las tres policies
+> de lectura pública sumando `archived_at is null`. El admin sigue viendo todo, que es lo
+> que permite recuperarla.
+
+**En el sitio público (6.6):** las no disponibles **no se ocultan** — mostrar que la
+inmobiliaria mueve propiedades es bueno comercialmente. Van **al final del listado** y
+**marcadas visiblemente**. Es trabajo sobre el frontend público, con su propia verificación
+visual, así que va en su propia sub-fase después del formulario.
 
 **Fase 6.5 — Campos nuevos en la ficha.** `expensas`, `frente_m`, `fondo_m`: secciones nuevas en `ProductDetailsReact.jsx`, con el mismo tri-estado. Solo si la dueña efectivamente carga esos datos.
 

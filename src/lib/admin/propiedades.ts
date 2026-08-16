@@ -53,20 +53,32 @@ const SELECT_LISTADO = `
  * consulta y el listado quedaría en blanco. Preguntamos una vez y, si no está,
  * el listado sigue andando sin la parte de estado.
  */
-let columnaEstado: boolean | null = null;
+export type Capacidades = { estado: boolean; archivado: boolean };
 
-export async function hayColumnaEstado(): Promise<boolean> {
-  if (columnaEstado !== null) return columnaEstado;
-  if (!supabase) return false;
-  const { error } = await supabase.from('properties').select('estado').limit(1);
-  columnaEstado = !error;
-  if (error) {
+let capacidades: Capacidades | null = null;
+
+export async function detectarCapacidades(): Promise<Capacidades> {
+  if (capacidades !== null) return capacidades;
+  if (!supabase) return { estado: false, archivado: false };
+
+  const [e, a] = await Promise.all([
+    supabase.from('properties').select('estado').limit(1),
+    supabase.from('properties').select('archived_at').limit(1),
+  ]);
+
+  capacidades = { estado: !e.error, archivado: !a.error };
+
+  if (e.error) {
     console.warn(
-      '[admin] la columna `estado` todavía no existe. ' +
-        'Corré scripts/fase6-estado-propiedad.sql en el SQL Editor de Supabase.'
+      '[admin] falta la columna `estado`. Corré scripts/fase6-estado-propiedad.sql.'
     );
   }
-  return columnaEstado;
+  if (a.error) {
+    console.warn(
+      '[admin] falta la columna `archived_at`. Corré scripts/fase6-archivar-propiedad.sql.'
+    );
+  }
+  return capacidades;
 }
 
 function mapear(row: any, conEstado: boolean): PropiedadListado {
@@ -94,16 +106,21 @@ function mapear(row: any, conEstado: boolean): PropiedadListado {
 }
 
 export async function listarPropiedades(): Promise<
-  { ok: true; propiedades: PropiedadListado[]; conEstado: boolean } | { ok: false; error: string }
+  | { ok: true; propiedades: PropiedadListado[]; capacidades: Capacidades }
+  | { ok: false; error: string }
 > {
   if (!supabase) return { ok: false, error: 'No hay conexión con la base de datos.' };
 
-  const conEstado = await hayColumnaEstado();
-  const select = conEstado ? SELECT_LISTADO : SELECT_LISTADO.replace(', estado', '');
+  const caps = await detectarCapacidades();
+  const select = caps.estado ? SELECT_LISTADO : SELECT_LISTADO.replace(', estado', '');
 
-  const { data, error } = await supabase
-    .from('properties')
-    .select(select)
+  let consulta = supabase.from('properties').select(select);
+
+  // Las archivadas no se muestran. El panel las esconde acá; que además no se
+  // filtren al sitio público lo garantiza RLS, no esta línea.
+  if (caps.archivado) consulta = consulta.is('archived_at', null);
+
+  const { data, error } = await consulta
     .order('sort_order', { ascending: true })
     .order('legacy_id', { ascending: true });
 
@@ -112,7 +129,41 @@ export async function listarPropiedades(): Promise<
     return { ok: false, error: 'No pudimos traer las propiedades. Probá recargar la página.' };
   }
 
-  return { ok: true, propiedades: (data ?? []).map((r) => mapear(r, conEstado)), conEstado };
+  return { ok: true, propiedades: (data ?? []).map((r) => mapear(r, caps.estado)), capacidades: caps };
+}
+
+/**
+ * "Eliminar" desde la interfaz. **No borra la fila**: le pone fecha a
+ * `archived_at`.
+ *
+ * Para la dueña la experiencia es la misma —toca eliminar y desaparece— pero el
+ * dato queda entero y se recupera con un UPDATE. Un DELETE de verdad se llevaría
+ * también las fotos, los servicios y las notas privadas por las claves foráneas
+ * en cascada, sin vuelta atrás.
+ */
+export async function archivarPropiedad(id: string) {
+  if (!supabase) return { ok: false as const, error: 'No hay conexión con la base de datos.' };
+
+  const caps = await detectarCapacidades();
+  if (!caps.archivado) {
+    return {
+      ok: false as const,
+      error:
+        'Todavía no se puede eliminar: falta preparar la base. ' +
+        'Avisale al desarrollador (scripts/fase6-archivar-propiedad.sql).',
+    };
+  }
+
+  const { error } = await supabase
+    .from('properties')
+    .update({ archived_at: new Date().toISOString() })
+    .eq('id', id);
+
+  if (error) {
+    console.error('[admin] archivarPropiedad:', error.message);
+    return { ok: false as const, error: 'No pudimos eliminar la propiedad. Probá de nuevo.' };
+  }
+  return { ok: true as const };
 }
 
 /** Publica o despublica. Devuelve el estado que quedó. */
