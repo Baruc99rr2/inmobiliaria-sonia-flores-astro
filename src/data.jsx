@@ -626,7 +626,7 @@ export const productsData = [
         name: 'Casa en Venta con Cochera Doble, Asador y Salida a Dos Calles',
         price: 'A consultar',
         category: 'Venta',
-        description: 'Inmobiliaria Sonia Flores vende hermosa propiedad construida con materiales de primera calidad, excelente ubicación y una distribución impecable.\n\nLa casa cuenta con amplio living comedor, cocina, cocina comedor diario, lavadero, 2 dormitorios principales, antebaño, baño completo y un espacio versátil ideal para escritorio, biblioteca o 3er dormitorio, además de baño de cortesía para visitas.\n\nEn el exterior dispone de cochera para 2 vehículos, asador, habitación de guardado y lote en esquina/quinoa con un valioso acceso por 2 calles.\n\n📞 Para más información comunicarse al 3884881245 de 9 a 13 y de 16 a 18 hs.\nMartillera Sonia Flores MP 177.',
+        description: 'Inmobiliaria Sonia Flores vende hermosa propiedad construida con materiales de primera calidad, excelente ubicación y una distribución impecable.\n\nLa casa cuenta con amplio living comedor, cocina, cocina comedor diario, lavadero, 2 dormitorios principales, antebaño, baño completo y un espacio versátil ideal para escritorio, biblioteca o 3er dormitorio, además de baño de cortesía para visitas.\n\nEn el exterior dispone de cochera para 2 vehículos, asador, habitación de guardado y lote en esquina/quinoa con un valioso acceso por 2 calles.',
         detalles: {
             tipo: 'Casa',
             barrio: 'A consultar',
@@ -662,6 +662,63 @@ export const productsData = [
             mapaQuery: 'San Salvador de Jujuy, Jujuy',
             lat: null,
             lon: null
+        }
+    },
+    {
+        id: 20, // Reemplazar por el ID que corresponda
+        images: [
+            '/propiedades/casa-alto-comedero-alquiler/casa-alto-comedero1.jpg',
+            '/propiedades/casa-alto-comedero-alquiler/casa-alto-comedero.mp4',
+            '/propiedades/casa-alto-comedero-alquiler/casa-alto-comedero2.jpg',
+            '/propiedades/casa-alto-comedero-alquiler/casa-alto-comedero3.jpg',
+            '/propiedades/casa-alto-comedero-alquiler/casa-alto-comedero4.jpg',
+            '/propiedades/casa-alto-comedero-alquiler/casa-alto-comedero5.jpg',
+            '/propiedades/casa-alto-comedero-alquiler/casa-alto-comedero6.jpg',
+            '/propiedades/casa-alto-comedero-alquiler/casa-alto-comedero7.jpg',
+            '/propiedades/casa-alto-comedero-alquiler/casa-alto-comedero8.jpg',
+            '/propiedades/casa-alto-comedero-alquiler/casa-alto-comedero9.jpg',
+            '/propiedades/casa-alto-comedero-alquiler/casa-alto-comedero10.jpg',
+            '/propiedades/casa-alto-comedero-alquiler/casa-alto-comedero11.jpg',
+            '/propiedades/casa-alto-comedero-alquiler/casa-alto-comedero12.jpg',
+            '/propiedades/casa-alto-comedero-alquiler/casa-alto-comedero13.jpg',
+            '/propiedades/casa-alto-comedero-alquiler/casa-alto-comedero14.jpg',
+        ],
+        name: 'Casa Linda, Cómoda y Luminosa con Galería y Asador en Alto Comedero',
+        price: '800000',
+        category: 'Alquiler',
+        description: 'Inmobiliaria Sonia Flores alquila hermosa casa muy linda, cómoda y luminosa sobre calle Teniente Farías en Alto Comedero.\n\nLa propiedad cuenta con entrada para auto, amplio living comedor, cocina equipada, 3 dormitorios confortables, antebaño y baño completo.\n\nEn el exterior dispone de agradable galería, patio espacioso y asador ideal para reuniones familiares.\n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.\n\n',
+        detalles: {
+            tipo: 'Casa',
+            barrio: 'Barrio Alto Comedero',
+            cocheras: 1,
+            ambientes: 5,
+            calle: 'Teniente Farías',
+            numero: '',
+            dormitorios: 3,
+            banos: 1,
+            mostrarDireccionExacta: true,
+            superficie_m2: 'a consultar',
+            frente_m: 'a consultar',
+            fondo_m: 'a consultar',
+            servicios: [
+                'Agua',
+                'Luz',
+                'Cloaca',
+                'Gas',
+                'Pavimento'
+            ],
+            adicionales: [
+                'Entrada para Auto',
+                'Galería',
+                'Patio',
+                'Asador',
+                'Living Comedor',
+                'Muy Luminosa',
+                'Antebaño'
+            ],
+            mapaQuery: 'Teniente Farías, Alto Comedero, San Salvador de Jujuy, Jujuy',
+            lat: -24.235552,
+            lon: -65.260669
         }
     }
 ]
