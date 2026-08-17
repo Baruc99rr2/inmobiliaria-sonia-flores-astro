@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import MarcaEstado from "./MarcaEstado";
 // Importamos los datos directamente sin usar Context
 import { productsData } from "../data"; 
 import { MdLocationOn, MdOutlineBathtub } from 'react-icons/md';
@@ -73,6 +74,7 @@ const ProductCard = ({ product }) => {
           <img src={displayImage} alt={product.name} className="w-full h-full object-cover select-none pointer-events-none transition-transform duration-500 group-hover:scale-105" loading="lazy" />
           <div className="absolute top-3 left-3 z-10"><span className="text-[11px] font-bold text-gray-900 bg-white px-2.5 py-1 rounded-md shadow-md uppercase">{product.category || "VENTA"}</span></div>
           <div className="absolute top-3 right-3 bg-white/90 hover:bg-white p-2 rounded-full shadow-md z-10 flex items-center justify-center">{getTypeIcon(product.detalles?.tipo)}</div>
+          <MarcaEstado product={product} />
         </div>
         
         <div className="text-left px-0.5 select-none mb-3">

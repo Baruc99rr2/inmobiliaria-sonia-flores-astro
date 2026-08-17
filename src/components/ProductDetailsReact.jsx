@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { BiChevronLeft, BiChevronRight, BiBed, BiArea, BiHomeAlt, BiCar, BiWater, BiBlanket, BiBuildingHouse, BiWifi, BiShareAlt, BiLogoWhatsapp, BiLogoFacebook, BiLogoInstagram } from 'react-icons/bi';
 import { IoMdClose } from 'react-icons/io';
-import { MdOutlineBathtub, MdLocationOn, MdOutlineLocalDrink, MdOutlineElectricBolt, MdOutlineGasMeter, MdFullscreen } from 'react-icons/md';
+import { MdOutlineBathtub, MdLocationOn, MdOutlineLocalDrink, MdOutlineElectricBolt, MdOutlineGasMeter, MdFullscreen, MdInfoOutline } from 'react-icons/md';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { formatTriEstado, formatMedida, formatUbicacion, etiquetaZona } from '../lib/format';
+import { estaDisponible } from '../lib/mapProperty';
 
 // Las claves tienen que coincidir con los labels del catálogo `services`
 // (§5.3 del plan): Agua, Luz, Gas, Cloaca, Pavimento, Wifi.
@@ -177,6 +178,28 @@ const ProductDetailsReact = ({ product, currentUrl }) => {
                             </div>
                         </div>
 
+                        {/* Fase 6.6: la propiedad no se oculta cuando ya se
+                            alquiló o se vendió, pero quien entra tiene que
+                            enterarse ANTES de leer el precio y entusiasmarse.
+                            Por eso va arriba del título y no al pie. */}
+                        {!estaDisponible(product) && (
+                            <div className="mb-4 flex items-start gap-3 rounded-xl border border-gray-300 bg-gray-100 p-4">
+                                <MdInfoOutline className="mt-0.5 shrink-0 text-xl text-gray-600" />
+                                <div>
+                                    <p className="font-bold text-gray-900">
+                                        Esta propiedad ya no está disponible
+                                    </p>
+                                    <p className="mt-0.5 text-sm text-gray-600">
+                                        {product.category?.toLowerCase() === 'alquiler'
+                                            ? 'Ya se alquiló.'
+                                            : 'Ya se vendió.'}{' '}
+                                        La dejamos publicada como referencia. Escribinos y te
+                                        contamos qué tenemos parecido.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         <h1 className='text-2xl sm:text-4xl font-black text-gray-900 leading-tight mb-3'>{product.name}</h1>
                         <p className='text-2xl sm:text-3xl font-extrabold text-red-600'>
                             {hasValidPrice ? (
@@ -204,8 +227,25 @@ const ProductDetailsReact = ({ product, currentUrl }) => {
 
                     <div className="bg-white p-5 sm:p-8 rounded-2xl border border-gray-100 shadow-sm">
                         <h3 className="text-xl font-bold mb-4">Descripción</h3>
-                        <p className='text-gray-600 leading-relaxed text-[15px] sm:text-lg'>{product.description}</p>
+                        <p className='text-gray-600 leading-relaxed text-[15px] sm:text-lg whitespace-pre-line'>{product.description}</p>
                     </div>
+
+                    {/* Fase 6.6: los requisitos salen de su propia columna.
+                        Hasta ahora venían pegados dentro de la descripción, con
+                        el "⚠️" y todo, en 10 propiedades. Se sacaron de ahí y se
+                        pasaron a `requisitos` para que la dueña los edite por
+                        separado y para poder darles este formato.
+
+                        `whitespace-pre-line` porque el texto trae saltos de
+                        línea reales (una viñeta por requisito). */}
+                    {product.detalles?.requisitos && (
+                        <div className="bg-white p-5 sm:p-8 rounded-2xl border border-gray-100 shadow-sm">
+                            <h3 className="text-xl font-bold mb-4">Requisitos para alquilar</h3>
+                            <p className='text-gray-600 leading-relaxed text-[15px] sm:text-lg whitespace-pre-line'>
+                                {product.detalles.requisitos}
+                            </p>
+                        </div>
+                    )}
 
                     {serviciosGrid.length > 0 && (
                         <div className="bg-white p-5 sm:p-8 rounded-2xl border border-gray-100 shadow-sm">

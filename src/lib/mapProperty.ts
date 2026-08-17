@@ -36,6 +36,7 @@ export const PROPERTY_SELECT = `
   ambientes, dormitorios, banos, cocheras, expensas,
   superficie_m2, frente_m, fondo_m,
   lat, lon, mapa_query, adicionales, published, sort_order,
+  estado, requisitos,
   property_types ( slug, label, legacy_label ),
   localidades ( slug, label ),
   neighborhoods ( slug, label ),
@@ -177,17 +178,73 @@ export function mapDbToProduct(row: any) {
       // `localidad` permite mostrar algo útil sin revelar barrio ni calle.
       hide_location: Boolean(row.hide_location),
       localidad: row.localidades?.label ?? '',
+
+      // --- Claves NUEVAS de la Fase 6.6 ---
+      // `estado` es el estado comercial. NO se oculta la propiedad: una
+      // alquilada sigue mostrándose, marcada y al final del listado. Es una
+      // decisión de la dueña: sirve de muestrario de lo que se opera.
+      //
+      // `data.jsx` no tiene la columna, así que el fallback cae en 'disponible',
+      // que es el default de la base.
+      estado: estadoValido(row.estado),
+      requisitos: (row.requisitos ?? '').trim(),
     },
   };
 }
 
-/** Ordena como el listado público y mapea todo de una. */
+/** Los tres estados posibles. Cualquier otra cosa se trata como disponible. */
+export type EstadoPropiedad = 'disponible' | 'alquilada' | 'vendida';
+
+const ESTADOS: EstadoPropiedad[] = ['disponible', 'alquilada', 'vendida'];
+
+function estadoValido(v: unknown): EstadoPropiedad {
+  return ESTADOS.includes(v as EstadoPropiedad) ? (v as EstadoPropiedad) : 'disponible';
+}
+
+/** ¿Se puede alquilar/comprar hoy? */
+export function estaDisponible(producto: { detalles?: { estado?: string } }): boolean {
+  return (producto?.detalles?.estado ?? 'disponible') === 'disponible';
+}
+
+/** "Alquilada" / "Vendida", o `null` si está disponible. */
+export function etiquetaEstado(producto: { detalles?: { estado?: string } }): string | null {
+  const e = producto?.detalles?.estado ?? 'disponible';
+  if (e === 'alquilada') return 'Alquilada';
+  if (e === 'vendida') return 'Vendida';
+  return null;
+}
+
+/**
+ * Ordena como el listado público y mapea todo de una.
+ *
+ * Las que ya no están disponibles van AL FINAL, nunca ocultas: la dueña las
+ * quiere a la vista como muestrario de lo que opera. Dentro de cada grupo se
+ * mantiene el orden de siempre (`sort_order`, después `legacy_id`).
+ */
 export function mapDbToProducts(rows: any[]) {
   return [...(rows ?? [])]
     .sort(
       (a, b) =>
+        Number(estadoValido(a.estado) !== 'disponible') -
+          Number(estadoValido(b.estado) !== 'disponible') ||
         (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
         (a.legacy_id ?? 0) - (b.legacy_id ?? 0)
     )
     .map(mapDbToProduct);
+}
+
+/**
+ * Reordena productos YA MAPEADOS dejando las no disponibles al final.
+ *
+ * Hace falta aparte de `mapDbToProducts` porque la búsqueda reordena por precio
+ * o por título después de mapear, y ese orden pisaría el agrupamiento. Se aplica
+ * como criterio de desempate exterior: primero disponible/no disponible, y
+ * recién adentro el orden que eligió la persona.
+ */
+export function disponiblesPrimero<T extends { detalles?: { estado?: string } }>(
+  productos: T[]
+): T[] {
+  return [...productos].sort(
+    (a, b) => Number(!estaDisponible(a)) - Number(!estaDisponible(b))
+  );
 }

@@ -76,8 +76,9 @@ export const productsData = [
         name: 'SALON COMERCIAL en Palpalá',
         price: "650000", // Precio establecido en $650.000
         category: 'Alquiler',
-        description: 'Excelente salón comercial de 180m² en Palpalá con baño, patio y dos habitaciones. Ideal para gimnasio, estética, salón de fiestas, emprendimientos o vivienda. Zona de fácil acceso y estacionamiento.\n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
+        description: 'Excelente salón comercial de 180m² en Palpalá con baño, patio y dos habitaciones. Ideal para gimnasio, estética, salón de fiestas, emprendimientos o vivienda. Zona de fácil acceso y estacionamiento.',
         detalles: {
+            requisitos: '• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
             tipo: 'Local', // O 'salón' según cómo manejes tus tipos en el filtro
             barrio: 'Palpalá',
             cocheras: 0, // Se especifica zona de fácil estacionamiento afuera
@@ -218,8 +219,9 @@ export const productsData = [
         name: 'Departamentos de 1 dormitorio en Pasaje El Tala Barrio Cuyaya',
         price: "400000",
         category: 'Alquiler',
-        description: 'Departamento amplio y luminoso, ideal para una persona o pareja. Cuenta con un dormitorio, cocina comedor, baño y balcón. Excelente ubicación en Pasaje El Tala. \n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
+        description: 'Departamento amplio y luminoso, ideal para una persona o pareja. Cuenta con un dormitorio, cocina comedor, baño y balcón. Excelente ubicación en Pasaje El Tala.',
         detalles: {
+            requisitos: '• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
             tipo: 'Departamento',
             barrio: 'Barrio Cuyaya',
             calle: 'Pasaje El Tala',
@@ -247,8 +249,9 @@ export const productsData = [
         name: 'OFICINA CÉNTRICA en Alquiler Barrio Centro',
         price: "350000", // Precio establecido en $350.000 (se le aplicará el /mes automáticamente)
         category: 'Alquiler',
-        description: 'Excelente oficina céntrica, ideal para profesionales (abogados, contadores, arquitectos, etc.). Cuenta con 2 salas de espera y opción de alquilar con o sin muebles. El precio incluye servicios (WiFi, etc.).\n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
+        description: 'Excelente oficina céntrica, ideal para profesionales (abogados, contadores, arquitectos, etc.). Cuenta con 2 salas de espera y opción de alquilar con o sin muebles. El precio incluye servicios (WiFi, etc.).',
         detalles: {
+            requisitos: '• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
             tipo: 'Oficina',
             barrio: 'Barrio Centro',
             cocheras: 0,
@@ -277,8 +280,9 @@ export const productsData = [
         name: 'Departamento de 2 dormitorios con excelente vista Barrio Los Perales',
         price: "700000",
         category: 'Alquiler',
-        description: 'Departamento con living comedor, cocina, dos dormitorios, baño, lavadero y balcón. Se destaca por su excelente vista e iluminación natural. \n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
+        description: 'Departamento con living comedor, cocina, dos dormitorios, baño, lavadero y balcón. Se destaca por su excelente vista e iluminación natural.',
         detalles: {
+            requisitos: '• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
             tipo: 'Departamento',
             barrio: 'Barrio Los Perales',
             calle: '',
@@ -369,8 +373,9 @@ export const productsData = [
         name: 'Amplia Casa de 3 Dormitorios',
         price: "580000", // En número sin comillas para que funcione perfecto con tus formateadores de precio
         category: 'Alquiler',
-        description: 'Excelente casa familiar en alquiler ubicada en estratégica zona cercana a la empresa Santa Ana, con rápido y fácil acceso al centro y líneas de transporte. La propiedad cuenta con un cómodo living, comedor independiente, cocina funcional, 3 amplios dormitorios, 2 baños completos y un lindo patio ideal para disfrutar al aire libre.\n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
+        description: 'Excelente casa familiar en alquiler ubicada en estratégica zona cercana a la empresa Santa Ana, con rápido y fácil acceso al centro y líneas de transporte. La propiedad cuenta con un cómodo living, comedor independiente, cocina funcional, 3 amplios dormitorios, 2 baños completos y un lindo patio ideal para disfrutar al aire libre.',
         detalles: {
+            requisitos: '• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
             tipo: 'Casa',
             barrio: 'A consultar', // Mantiene la referencia de valor sin mencionar San Isidro
             cocheras: 0, 
@@ -459,8 +464,9 @@ export const productsData = [
         name: 'Departamento con 2 Dormitorios en Barrio Gorriti',
         price: "620000",
         category: 'Alquiler',
-        description: 'Cómodo departamento ubicada en Barrio Gorriti, a metros de la intersección de calle Uriondo y Juana Manuela Gorriti. Cuenta con dos dormitorios, living, comedor, cocina, lavadero y baño, ideal para familias que buscan una excelente ubicación y ambientes funcionales. \n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
+        description: 'Cómodo departamento ubicada en Barrio Gorriti, a metros de la intersección de calle Uriondo y Juana Manuela Gorriti. Cuenta con dos dormitorios, living, comedor, cocina, lavadero y baño, ideal para familias que buscan una excelente ubicación y ambientes funcionales.',
         detalles: {
+            requisitos: '• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
                 tipo: 'Departamento',
                 barrio: 'Barrio Gorriti',
                 cocheras: 0,
@@ -495,8 +501,9 @@ export const productsData = [
         name: 'Departamento de 1 Dormitorio en Barrio Centro',
         price: 'A consultar',
         category: 'Alquiler',
-        description: 'Amplio y luminoso departamento ubicado sobre calle Belgrano en pleno Barrio Centro. Cuenta con cocina, comedor, un dormitorio y baño completo. Posee acceso a todos los servicios básicos, ideal para quienes buscan comodidad y excelente ubicación céntrica.\n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
+        description: 'Amplio y luminoso departamento ubicado sobre calle Belgrano en pleno Barrio Centro. Cuenta con cocina, comedor, un dormitorio y baño completo. Posee acceso a todos los servicios básicos, ideal para quienes buscan comodidad y excelente ubicación céntrica.',
         detalles: {
+            requisitos: '• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
             tipo: 'Departamento',
             barrio: 'Barrio Centro',
             cocheras: 0,
@@ -538,8 +545,9 @@ export const productsData = [
         name: 'Departamento de 2 Dormitorios en Barrio Los Perales',
         price: 'A consultar',
         category: 'Alquiler',
-        description: 'Hermoso y pintoresco departamento de 2 dormitorios ubicado en Barrio Los Perales, a metros de la Av. Illia.\n\nCuenta con living-comedor integrado muy amplio y luminoso, cocina funcional, antebaño, baño completo y balcón. Además, el edificio dispone de terraza con asador y cochera.\n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
+        description: 'Hermoso y pintoresco departamento de 2 dormitorios ubicado en Barrio Los Perales, a metros de la Av. Illia.\n\nCuenta con living-comedor integrado muy amplio y luminoso, cocina funcional, antebaño, baño completo y balcón. Además, el edificio dispone de terraza con asador y cochera.',
         detalles: {
+            requisitos: '• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
             tipo: 'Departamento',
             barrio: 'Barrio Los Perales',
             cocheras: 1,
@@ -586,8 +594,9 @@ export const productsData = [
             name: 'Local/locales Comerciales sobre Av. Libertad en Palpala',
             price: '200000',
             category: 'Alquiler',
-            description: 'Inmobiliaria Sonia Flores alquila locales comerciales sobre Avenida Libertad al 200, Palpalá. Ideales para emprender o expandir tu negocio en una zona de constante tránsito.\n\nPrecios desde $200.000.\n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.\n\n📞 Para más información comunicarse al 3884881245 de 9 a 13 y de 16 a 18 hs.\nMartillera Sonia Flores MP 177.',
+            description: 'Inmobiliaria Sonia Flores alquila locales comerciales sobre Avenida Libertad al 200, Palpalá. Ideales para emprender o expandir tu negocio en una zona de constante tránsito.\n\nPrecios desde $200.000.\n\n📞 Para más información comunicarse al 3884881245 de 9 a 13 y de 16 a 18 hs.\nMartillera Sonia Flores MP 177.',
             detalles: {
+                requisitos: '• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
                 tipo: 'Local',
                 barrio: 'Palpalá',
                 cocheras: 0,
@@ -686,8 +695,9 @@ export const productsData = [
         name: 'Casa Linda, Cómoda y Luminosa con Galería y Asador en Alto Comedero',
         price: '800000',
         category: 'Alquiler',
-        description: 'Inmobiliaria Sonia Flores alquila hermosa casa muy linda, cómoda y luminosa sobre calle Teniente Farías en Alto Comedero.\n\nLa propiedad cuenta con entrada para auto, amplio living comedor, cocina equipada, 3 dormitorios confortables, antebaño y baño completo.\n\nEn el exterior dispone de agradable galería, patio espacioso y asador ideal para reuniones familiares.\n\n⚠️ REQUISITOS PARA ALQUILAR:\n• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.\n\n',
+        description: 'Inmobiliaria Sonia Flores alquila hermosa casa muy linda, cómoda y luminosa sobre calle Teniente Farías en Alto Comedero.\n\nLa propiedad cuenta con entrada para auto, amplio living comedor, cocina equipada, 3 dormitorios confortables, antebaño y baño completo.\n\nEn el exterior dispone de agradable galería, patio espacioso y asador ideal para reuniones familiares.',
         detalles: {
+            requisitos: '• Recibo de sueldo del Solicitante y garante, que tripliquen el valor del alquiler.',
             tipo: 'Casa',
             barrio: 'Barrio Alto Comedero',
             cocheras: 1,

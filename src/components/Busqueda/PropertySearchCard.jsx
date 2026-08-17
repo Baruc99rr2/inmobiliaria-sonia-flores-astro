@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import MarcaEstado from "../MarcaEstado";
 import { MdLocationOn, MdBed, MdBathtub, MdSquareFoot, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { chipTriEstado, chipMedida, etiquetaZona } from '../../lib/format';
 
@@ -55,12 +56,14 @@ const PropertySearchCard = ({
           ? "h-[165px] md:h-[175px] max-[320px]:h-[138px]" 
           : "w-full sm:w-[230px] h-[195px] sm:h-[168px]"
       }`}>
-        <img 
-          src={images[currentImgIndex]} 
-          alt={product?.name || "Propiedad"} 
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-          loading="lazy" 
+        <img
+          src={images[currentImgIndex]}
+          alt={product?.name || "Propiedad"}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          loading="lazy"
         />
+
+        <MarcaEstado product={product} />
 
         {/* FLECHAS DE NAVEGACIÓN */}
         {images.length > 1 && (

@@ -156,12 +156,16 @@ function construirFilas(productsData) {
       legacy_id: p.id,
       slug,
       name: p.name ?? '',
-      // La descripción se migra INTACTA. El bloque de requisitos queda adentro
-      // a propósito: ningún componente lee la columna `requisitos`, así que
-      // extraerlo ahora borraría ese texto de la vista pública en la Fase 3.
-      // Se separa en la Fase 6, cuando el panel tenga el campo.
+      // Fase 6.6: el bloque de requisitos YA NO viene adentro de la descripción.
+      // Se separó en `scripts/fase66-separar-requisitos.mjs`, tanto en la base
+      // como en `data.jsx`, y la ficha de detalle ahora renderiza la columna.
+      //
+      // Este `requisitos` tiene que leer el dato y NO ser `null` fijo como era
+      // antes: si volviera a quedar en `null`, la próxima corrida de la
+      // migración vaciaría la columna de las 10 propiedades que lo tienen,
+      // aunque `data.jsx` esté bien.
       description: p.description ?? '',
-      requisitos: null,
+      requisitos: d.requisitos ?? null,
 
       operation: p.category === 'Alquiler' ? 'alquiler' : 'venta',
       tipo_legacy_label: d.tipo ?? null,
