@@ -105,8 +105,18 @@ export async function iniciarSesion(email: string, password: string) {
   return { ok: true as const };
 }
 
-export async function cerrarSesion() {
+/**
+ * Cierra la sesión.
+ *
+ * `scope` por defecto es `'global'` en supabase-js: cierra la sesión en TODOS
+ * los dispositivos. Para el botón "Cerrar sesión" está bien, pero el cierre por
+ * inactividad pasa `'local'`: ahí lo que hay que invalidar es el teléfono que
+ * quedó abandonado, no la sesión de la compu de la oficina. En los dos casos se
+ * limpia el `localStorage` de este browser, que es lo que impide que el que
+ * agarre el teléfono siga adentro.
+ */
+export async function cerrarSesion(opciones?: { scope?: 'global' | 'local' | 'others' }) {
   if (!supabase) return;
-  const { error } = await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut({ scope: opciones?.scope ?? 'global' });
   if (error) console.error('[auth] signOut:', error.message);
 }

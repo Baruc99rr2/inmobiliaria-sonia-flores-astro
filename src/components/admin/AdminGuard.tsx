@@ -1,7 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Button } from '@/components/admin/ui/button';
 import { Alert, AlertDescription } from '@/components/admin/ui/alert';
 import { getSesion, esAdmin, cerrarSesion, hayCliente, SIN_CLIENTE } from '@/lib/auth';
+import AvisoInactividad from '@/components/admin/AvisoInactividad';
+import { useInactividad } from '@/components/admin/hooks/use-inactividad';
+import { limpiarActividad } from '@/lib/admin/inactividad';
 
 type Estado = 'verificando' | 'sin-cliente' | 'sin-sesion' | 'no-admin' | 'ok';
 
@@ -22,6 +25,26 @@ type Estado = 'verificando' | 'sin-cliente' | 'sin-sesion' | 'no-admin' | 'ok';
 export default function AdminGuard({ children }: { children?: ReactNode }) {
   const [estado, setEstado] = useState<Estado>('verificando');
   const [email, setEmail] = useState<string | null>(null);
+
+  /**
+   * Cierre por inactividad. `scope: 'local'` y no el `global` que viene por
+   * defecto: alcanza con matar la sesión de ESTE teléfono, que es el que quedó
+   * dando vueltas. Con `global` también la echaríamos de la compu de la
+   * oficina, que no tiene nada que ver.
+   *
+   * El borrador del formulario NO se toca: es lo único que hace que cerrar la
+   * sesión cueste un login y no el trabajo de media hora.
+   */
+  const cerrarPorInactividad = useCallback(async () => {
+    limpiarActividad();
+    await cerrarSesion({ scope: 'local' });
+    window.location.replace('/admin/login?motivo=inactividad');
+  }, []);
+
+  const { mostrarAviso, restante, seguirConectada } = useInactividad({
+    activo: estado === 'ok',
+    onCerrar: cerrarPorInactividad,
+  });
 
   useEffect(() => {
     let vigente = true;
@@ -93,5 +116,10 @@ export default function AdminGuard({ children }: { children?: ReactNode }) {
   }
 
   // `sin-sesion` no se renderiza: ese camino ya redirigió al login.
-  return <>{children}</>;
+  return (
+    <>
+      {mostrarAviso && <AvisoInactividad restante={restante} onSeguir={seguirConectada} />}
+      {children}
+    </>
+  );
 }

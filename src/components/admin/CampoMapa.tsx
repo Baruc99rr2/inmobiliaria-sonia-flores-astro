@@ -154,7 +154,15 @@ export default function CampoMapa({
         </p>
       </div>
 
-      <div className="relative overflow-hidden rounded-lg border">
+      {/* `isolation: isolate` NO es decorativo: acota el apilamiento al bloque.
+          Leaflet le pone z-index propios a sus paneles y controles, y llega a
+          1000 en `.leaflet-top/.leaflet-bottom`. El encabezado del panel es
+          `z-10`, así que sin un contexto de apilamiento acá esos 1000 compiten
+          de igual a igual contra el 10 y el mapa termina tapando el encabezado
+          al scrollear. `relative` solo no alcanza: con `z-index: auto` no crea
+          contexto. Con `isolate`, todos los z-index de Leaflet quedan
+          encerrados y el bloque entero se apila como uno solo. */}
+      <div className="relative isolate overflow-hidden rounded-lg border">
         <MapContainer
           center={centro}
           zoom={hayMarcador ? 16 : 13}

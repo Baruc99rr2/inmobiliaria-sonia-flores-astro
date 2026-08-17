@@ -794,6 +794,8 @@ Tier gratuito: **1 GB**. Casi todas las propiedades tienen `.mp4`. Los videos ac
 | 11 | Clave `pk_test_` de Stripe versionada en git (pública, sin riesgo real, queda en el historial) | `Cart.jsx:9` | 🟡 Baja — `Cart.jsx` borrado en la Fase 0.5; la clave queda en el historial |
 | 12 | **`anon` tiene `REFERENCES`, `TRIGGER` y `TRUNCATE` sobre todas las tablas**, incluidas `property_notes` y `admins`. Vienen de los *default privileges* preexistentes del proyecto de Supabase, **no** de `scripts/fase1-grants.sql`, que solo otorga `SELECT` y las escrituras del panel a `authenticated` | esquema `public` en Supabase | 🟠 Media — **revisar después de la Fase 6** |
 
+| 13 | **Activar el "Inactivity timeout" del servidor de Supabase cuando el proyecto pase al plan Pro.** Hoy el cierre por inactividad es 100% del lado del cliente (Fase 6f). El ajuste del servidor es red de fondo, **no reemplazo**: para Supabase "actividad" es que se refresque el token, no que haya alguien usando el panel, y `supabase-js` refresca solo en segundo plano | Dashboard de Supabase → Auth → Sessions | 🟡 Baja — requiere plan Pro |
+
 | 12 | **`etiquetaZona()` detecta la ubicación reservada por dos vías**: `hide_location`, que expone el adaptador desde la Fase 3.5, y el centinela `'A consultar'` en `barrio` y `calle`, que es lo único que tiene el fallback de `data.jsx`. La segunda vía es deuda deliberada, no un descuido | `src/lib/format.js` (`formatUbicacion`, `etiquetaZona`) | 🟡 Baja — **se borra en la Fase 9** |
 
 > **Detalle del ítem 12.** Mientras exista el fallback de `data.jsx`, el helper tiene que

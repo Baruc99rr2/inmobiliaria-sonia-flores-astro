@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { borrarBorrador, cuandoFue, guardarBorrador, leerBorrador } from '@/lib/admin/borrador';
 import { ArrowLeftIcon } from 'lucide-react';
 import AdminGuard from '@/components/admin/AdminGuard';
 import AdminShell from '@/components/admin/AdminShell';
@@ -141,6 +142,19 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
   const [errorGuardar, setErrorGuardar] = useState<string | null>(null);
   const [guardado, setGuardado] = useState(false);
 
+  /** Cuándo se guardó el borrador que se recuperó, o `null` si no había. */
+  const [borradorDe, setBorradorDe] = useState<number | null>(null);
+
+  /**
+   * Cómo quedó el formulario recién cargado. Sirve para no dejar un borrador por
+   * el solo hecho de ABRIR una propiedad: si lo que hay en pantalla es igual a
+   * lo que hay en la base, no hay nada que recuperar. Sin esto, cada propiedad
+   * que abriera dejaría un borrador y al volver le diríamos "recuperamos lo que
+   * escribiste" cuando no escribió nada.
+   */
+  const base = useRef<string | null>(null);
+  const instantanea = (): string => JSON.stringify({ datos, numericos, servicios });
+
   const set = <K extends keyof DatosBasicos>(k: K, v: DatosBasicos[K]) => {
     setDatos((d) => ({ ...d, [k]: v }));
     setGuardado(false);
@@ -158,6 +172,10 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
       }
       setCatalogos(cat.catalogos);
 
+      let baseDatos: DatosBasicos = VACIO;
+      let baseNumericos: ValoresNumericos = NUMERICOS_VACIOS;
+      let baseServicios: number[] = [];
+
       if (id) {
         const p = await obtenerPropiedad(id);
         if (!vigente) return;
@@ -167,17 +185,64 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
           return;
         }
         const { id: _i, legacy_id: _l, published, ...resto } = p.propiedad;
-        setDatos(resto);
-        setNumericos(numericosDesdeDb(resto));
+        baseDatos = resto;
+        baseNumericos = numericosDesdeDb(resto);
+        baseServicios = await obtenerServicios(id);
+        if (!vigente) return;
         setPublicada(published);
-        setServicios(await obtenerServicios(id));
       }
+
+      setDatos(baseDatos);
+      setNumericos(baseNumericos);
+      setServicios(baseServicios);
+      base.current = JSON.stringify({
+        datos: baseDatos,
+        numericos: baseNumericos,
+        servicios: baseServicios,
+      });
+
+      // Si quedó trabajo sin guardar —típicamente porque cerró la sesión por
+      // inactividad—, se recupera y se le avisa. No se pisa en silencio: el
+      // cartel le deja volver a lo que hay en la base con un toque.
+      const b = leerBorrador<{
+        datos: DatosBasicos;
+        numericos: ValoresNumericos;
+        servicios: number[];
+      }>(id);
+      if (b) {
+        setDatos(b.datos.datos);
+        setNumericos(b.datos.numericos);
+        setServicios(b.datos.servicios);
+        setBorradorDe(b.guardadoEn);
+      }
+
       setCargando(false);
     })();
     return () => {
       vigente = false;
     };
   }, [id]);
+
+  /**
+   * Guarda el borrador en el teléfono mientras escribe.
+   *
+   * Con un respiro de 600 ms para no escribir en `localStorage` en cada tecla, y
+   * solo si de verdad cambió algo respecto de lo que hay en la base: si volvió
+   * todo para atrás, el borrador se borra en vez de quedar dando vueltas.
+   *
+   * Ojo: esto NO cuenta como actividad para el cierre por inactividad. Son
+   * cosas separadas a propósito — escribir sí cuenta, pero porque lo detecta el
+   * `keydown`, no porque se haya guardado un borrador.
+   */
+  useEffect(() => {
+    if (cargando || base.current === null) return;
+    const actual = instantanea();
+    const t = window.setTimeout(() => {
+      if (actual === base.current) borrarBorrador(id);
+      else guardarBorrador(id, { datos, numericos, servicios });
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, [datos, numericos, servicios, cargando, id]);
 
   // Los barrios se filtran por localidad. Sin localidad elegida no hay barrios
   // que ofrecer: elegir un barrio suelto no significa nada.
@@ -199,10 +264,19 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
       : await actualizarPropiedad(id!, aGuardar, servicios);
 
     if (r.ok) {
+      // Guardado con éxito: ya está en la base, el borrador local no tiene nada
+      // que salvar. Si quedara, al volver le ofreceríamos "recuperar" algo que
+      // ya está guardado.
+      borrarBorrador(id);
       if (esNueva && 'id' in r) {
         window.location.replace(`/admin/propiedades/${r.id}?nueva=1`);
         return;
       }
+      // Se arma igual que `instantanea()`, con `datos` y no con `aGuardar`:
+      // `aGuardar` ya pasó por `numericosADb`, así que compararlo contra la
+      // instantánea daría distinto siempre y volvería a crear un borrador.
+      base.current = JSON.stringify({ datos, numericos, servicios });
+      setBorradorDe(null);
       setGuardado(true);
     } else {
       setErrorGuardar(r.error);
@@ -528,6 +602,31 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
       {errorGuardar && (
         <Alert variant="destructive">
           <AlertDescription>{errorGuardar}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Se recuperó trabajo sin guardar. Se le dice qué pasó y se le deja
+          volver a lo que hay en la base, por si prefiere descartarlo. */}
+      {borradorDe !== null && (
+        <Alert>
+          <AlertDescription className="flex flex-col gap-2">
+            <span>
+              Recuperamos lo que habías cargado {cuandoFue(borradorDe)} y no llegó a
+              guardarse. Revisalo y tocá “Guardar” para que quede.
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="self-start"
+              onClick={() => {
+                borrarBorrador(id);
+                window.location.reload();
+              }}
+            >
+              Descartar y volver a lo guardado
+            </Button>
+          </AlertDescription>
         </Alert>
       )}
 
