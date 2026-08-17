@@ -73,7 +73,13 @@ export default function SelectorCatalogo({
              opacidad solo lo deja pálido (1.96:1, el número flojo de la Fase
              5.5) y se confunde con un campo vacío. Con fondo gris se lee como
              apagado. */
-          className="h-9 flex-1 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60"
+          /* `min-w-0`: un ítem flex no baja de su ancho intrínseco, y el de un
+             `<select>` lo fija la opción más larga ("Local Comercial", nombres
+             de barrio). Sin esto, en pantallas muy angostas el select se niega a
+             encogerse y empuja al botón "+" fuera de la fila. De 320px para
+             arriba no cambia nada: ahí el select ya entra y `flex-1` le sigue
+             dando todo el espacio sobrante. */
+          className="h-9 min-w-0 flex-1 rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60"
         >
           <option value="">{textoVacio}</option>
           {opciones.map((o) => (

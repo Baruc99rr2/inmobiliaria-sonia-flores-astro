@@ -539,7 +539,10 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
 
       {/* Barra de acciones. Pegada abajo en el celular, para no tener que
           scrollear hasta el final cada vez que se quiere guardar. */}
-      <div className="sticky bottom-0 -mx-4 flex items-center gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur md:mx-0 md:rounded-xl md:border md:px-4">
+      {/* `flex-wrap`: de 320px para arriba entra todo en una línea y el wrap
+          nunca se activa. Abajo de eso, en vez de que "Publicada" se salga de la
+          barra, baja a un renglón propio. */}
+      <div className="sticky bottom-0 -mx-4 flex flex-wrap items-center gap-2 border-t bg-background/95 px-4 py-3 backdrop-blur md:mx-0 md:rounded-xl md:border md:px-4">
         <Button type="submit" disabled={guardando}>
           {guardando ? 'Guardando…' : esNueva ? 'Crear como borrador' : 'Guardar cambios'}
         </Button>
@@ -553,7 +556,7 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
         </Button>
 
         {!esNueva && (
-          <span className="ml-auto text-xs text-muted-foreground">
+          <span className="ml-auto shrink-0 text-xs text-muted-foreground">
             {publicada ? 'Publicada' : 'Borrador'}
           </span>
         )}
