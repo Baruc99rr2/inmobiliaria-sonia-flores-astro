@@ -50,6 +50,15 @@ export type DatosBasicos = {
    */
   hide_location: boolean;
   adicionales: string[];
+
+  // --- Mapa (Fase 6e) ---
+  /**
+   * Las dos van juntas: o hay punto o no hay. Media coordenada no ubica nada, y
+   * el sitio público chequea las dos antes de dibujar el marcador. `null` en las
+   * dos = sin punto, y el mapa público cae al centro de San Salvador.
+   */
+  lat: number | null;
+  lon: number | null;
 };
 
 /** Las claves numéricas, para leerlas de vuelta después de guardar. */
@@ -112,7 +121,7 @@ export async function obtenerPropiedad(id: string): Promise<
     // partir del texto del select, y una cadena armada en tiempo de ejecución le
     // hace perder la inferencia entera.
     .select(
-      'id, legacy_id, name, description, requisitos, operation, property_type_id, localidad_id, neighborhood_id, price, show_price, price_from, published, ambientes, dormitorios, banos, cocheras, expensas, superficie_m2, frente_m, fondo_m, calle, numero, show_exact_address, hide_location, adicionales'
+      'id, legacy_id, name, description, requisitos, operation, property_type_id, localidad_id, neighborhood_id, price, show_price, price_from, published, ambientes, dormitorios, banos, cocheras, expensas, superficie_m2, frente_m, fondo_m, calle, numero, show_exact_address, hide_location, adicionales, lat, lon'
     )
     .eq('id', id)
     .maybeSingle();
@@ -159,6 +168,12 @@ export async function obtenerPropiedad(id: string): Promise<
       show_exact_address: data.show_exact_address === true,
       hide_location: data.hide_location === true,
       adicionales: Array.isArray(data.adicionales) ? data.adicionales : [],
+
+      // Cada una por su lado, sin "si falta una, borro la otra": una fila con
+      // media coordenada no se puede dibujar, pero tampoco se pisa sola. El
+      // formulario la muestra tal cual está para que se pueda completar.
+      lat: data.lat === null || data.lat === undefined ? null : Number(data.lat),
+      lon: data.lon === null || data.lon === undefined ? null : Number(data.lon),
     },
   };
 }
@@ -241,7 +256,24 @@ function aFila(d: DatosBasicos, slug: string) {
     show_exact_address: d.show_exact_address,
     hide_location: d.hide_location,
     adicionales: d.adicionales.map((a) => a.trim()).filter(Boolean),
+
+    // Sin punto en el mapa van las dos en NULL y el sitio público centra en San
+    // Salvador. Se recortan a 6 decimales (~11 cm): más precisión que ésa, en un
+    // punto que se puso arrastrando con el dedo, es ruido.
+    lat: redondearCoord(d.lat, 90),
+    lon: redondearCoord(d.lon, 180),
   };
+}
+
+/**
+ * 6 decimales ~ 11 cm. Fuera del rango válido se guarda NULL en vez de un
+ * número imposible: la latitud llega hasta 90 y la longitud hasta 180, así que
+ * el tope va por parámetro y no compartido.
+ */
+function redondearCoord(v: number | null, tope: number): number | null {
+  if (v === null || !Number.isFinite(v)) return null;
+  if (Math.abs(v) > tope) return null;
+  return Number(v.toFixed(6));
 }
 
 /** Alta. Siempre como BORRADOR: publicar es un botón aparte y explícito. */

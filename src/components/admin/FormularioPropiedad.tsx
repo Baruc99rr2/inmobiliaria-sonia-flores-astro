@@ -6,6 +6,7 @@ import SelectorCatalogo from '@/components/admin/SelectorCatalogo';
 import CamposNumericos, { type ValoresNumericos } from '@/components/admin/CamposNumericos';
 import CamposTags from '@/components/admin/CamposTags';
 import CamposDireccion from '@/components/admin/CamposDireccion';
+import CampoMapa from '@/components/admin/CampoMapa';
 import { Checkbox } from '@/components/admin/ui/checkbox';
 import {
   contableDesdeDb,
@@ -71,6 +72,8 @@ const VACIO: DatosBasicos = {
   show_exact_address: false,
   hide_location: false,
   adicionales: [],
+  lat: null,
+  lon: null,
 };
 
 const CONTABLE_VACIO = { noTiene: false, valor: '' };
@@ -407,6 +410,16 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
         hideLocation={datos.hide_location}
         onCambio={(parcial) => {
           setDatos((d) => ({ ...d, ...parcial }));
+          setGuardado(false);
+        }}
+      />
+
+      {/* --- Mapa (6e) --- */}
+      <CampoMapa
+        lat={datos.lat}
+        lon={datos.lon}
+        onCambio={(lat, lon) => {
+          setDatos((d) => ({ ...d, lat, lon }));
           setGuardado(false);
         }}
       />
