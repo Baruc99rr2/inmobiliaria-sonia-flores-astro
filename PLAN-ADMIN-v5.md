@@ -755,6 +755,14 @@ Fondo      [    ] m       (sin checkbox)
 11. **`price` nunca se mapea a `0`.** Cuatro formateadores usan `!isNaN(price)` e imprimirían `$0`.
 12. **`detalles.tipo` devuelve `legacy_label`**, no el label de presentación.
 13. Si algo del plan no encaja con el código, **decirlo y proponer alternativa**, no forzarlo.
+14. **Prohibido agujerear `AdminGuard` para poder probar.** Nada de saltear el guard por
+    query string, variable de entorno o flag, ni siquiera de forma temporal y con la
+    intención de revertirlo antes del commit. Se hizo dos veces durante la Fase 6 (un
+    `?zzsinguard`) y las dos se revirtió, pero es una ruleta: alcanza con que una vez no se
+    revierta para dejar el panel abierto en producción. **Si hace falta ver el panel sin
+    sesión, pedirle al dev una sesión de prueba o un usuario descartable que después se
+    borra.** Si no se consigue acceso, hacer todo lo demás, decir explícitamente qué quedó
+    sin verificar y por qué, y dejarlo para que lo confirme el dev en el preview.
 
 ---
 
