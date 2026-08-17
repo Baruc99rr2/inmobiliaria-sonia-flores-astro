@@ -24,6 +24,11 @@ export default function LoginForm() {
 
   const sinCliente = !hayCliente();
 
+  // `?motivo=inactividad` lo pone el cierre automático del guard.
+  const porInactividad =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('motivo') === 'inactividad';
+
   // Si ya hay sesión de un admin, no tiene sentido mostrar el formulario.
   useEffect(() => {
     let vigente = true;
@@ -80,6 +85,17 @@ export default function LoginForm() {
       </CardHeader>
 
       <CardContent>
+        {/* Explica por qué la echó, para que no parezca que el panel falló. */}
+        {porInactividad && !sinCliente && (
+          <Alert className="mb-4">
+            <AlertDescription>
+              Cerramos tu sesión porque estuviste un rato sin usar el panel. Es por seguridad,
+              por si el teléfono queda en manos de otra persona. Lo que hayas cargado y no se
+              haya guardado te va a estar esperando.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {sinCliente ? (
           <Alert variant="destructive">
             <AlertDescription>{SIN_CLIENTE}</AlertDescription>

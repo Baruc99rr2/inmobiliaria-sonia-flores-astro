@@ -1,6 +1,6 @@
 import AdminGuard from '@/components/admin/AdminGuard';
 import AdminShell from '@/components/admin/AdminShell';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/admin/ui/card';
+import ListadoPropiedades from '@/components/admin/ListadoPropiedades';
 
 /**
  * Pantalla de Propiedades.
@@ -16,19 +16,7 @@ export default function PanelInicio() {
   return (
     <AdminGuard>
       <AdminShell seccionActiva="propiedades" titulo="Propiedades">
-        <Card>
-          <CardHeader>
-            <CardTitle>Todavía no hay nada acá</CardTitle>
-            <CardDescription>
-              Esta es la pantalla donde vas a ver y editar tus propiedades.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              El listado y el formulario de carga se agregan en el próximo paso.
-            </p>
-          </CardContent>
-        </Card>
+        <ListadoPropiedades />
       </AdminShell>
     </AdminGuard>
   );

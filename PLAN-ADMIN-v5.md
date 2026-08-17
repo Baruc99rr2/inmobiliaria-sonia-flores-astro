@@ -63,6 +63,29 @@ Normalización **terminada y verificada** en la Fase 0. Servicios reducidos a se
 
 **`categoryItem` es un export muerto**: no lo importa nadie. No hay que migrarlo ni preservarlo. Se va con `data.jsx` en la Fase 9.
 
+### ⚠️ Dos fuentes de verdad: `data.jsx` y la base
+
+> **Mientras `data.jsx` exista, correr la migración pisa con su contenido todo lo que se
+> haya editado desde el panel o por SQL.**
+
+Hoy alcanza a **título, precio, descripción, tipo, localidad, barrio y todo lo que edita el
+formulario**. Ya pasó una vez: `scripts/fase6-estado-propiedad.sql` limpió el prefijo
+`-ALQUILADA-` de dos títulos, se recorrió la migración, y los títulos volvieron sucios
+porque `data.jsx` todavía los tenía así. El sitio público quedó mostrando
+*"-ALQUILADA-CASA en Calle Belgrano"* hasta que se corrigió el origen.
+
+**La regla mientras tanto:**
+
+1. La migración se corre **solo para agregar propiedades nuevas**, nunca como "refrescar
+   todo".
+2. **Antes de correrla**, verificar que `data.jsx` refleje los cambios hechos desde el
+   panel. Si no, esos cambios se pierden.
+3. Las columnas que **no** están en `data.jsx` —`estado`, `archived_at`, `published`— sí
+   sobreviven, porque la migración no las toca.
+
+Esto desaparece en la **Fase 9**, cuando se borre `data.jsx` y la base quede como única
+fuente de verdad.
+
 ---
 
 ## 2. Reglas de negocio
@@ -569,7 +592,57 @@ Después `npx shadcn@latest init`, `/admin/login`, guard, ícono discreto en el 
 
 **Fase 5 — Shell del panel.** `npx shadcn@latest add sidebar-07`, borrar lo de ejemplo, aplicar la paleta. Español rioplatense. *Verificación: responsive en celular.*
 
-**Fase 6 — CRUD.** Listado con búsqueda y toggle publicado. Formulario según §8. Alta como borrador. *Verificación: ciclo completo probando los tres estados de un campo numérico.*
+**Fase 6 — CRUD.** Se hace en sub-fases, con un commit y una verificación cada una:
+
+| | Alcance |
+|---|---|
+| **6a** | Listado: búsqueda, filtro por operación y por publicación, toggle de publicado, estado comercial y archivado |
+| **6b** | Formulario: textos y selects (título, descripción, requisitos con "insertar texto estándar", operación, tipo/localidad/barrio con "agregar nuevo", precio + switches) |
+| **6c** | Campos numéricos con el tri-estado de §8 |
+| **6d** | Servicios, adicionales y dirección con switches de visibilidad |
+| **6e** | Mapa Leaflet con marcador arrastrable |
+| **6.6** | Sitio público: ordenar disponibles primero y marcar las no disponibles |
+
+Alta como borrador (`published = false`). Publicar es un botón aparte y explícito.
+
+*Verificación: ciclo crear → publicar → ver → editar → despublicar, probando los tres estados de un campo numérico.*
+
+#### Estado comercial y archivado (6a)
+
+Dos columnas nuevas, cada una con su script para correr a mano en Supabase:
+
+| Columna | Script | Para qué |
+|---|---|---|
+| `estado` (`disponible` / `alquilada` / `vendida`) | `scripts/fase6-estado-propiedad.sql` | Marcar que ya se alquiló o se vendió, sin ensuciar el título |
+| `archived_at` | `scripts/fase6-archivar-propiedad.sql` | "Eliminar" sin borrar: la fila queda y se puede recuperar |
+
+**Por qué `estado` y no el título.** Antes esto se hacía escribiendo `-ALQUILADA-` en el
+nombre, lo que ensuciaba el título en la web, en Google y en lo que se comparte por
+WhatsApp. El script migra las dos propiedades que lo tenían y les limpia el prefijo.
+
+**En el panel, dos acciones separadas:**
+
+1. **Toggle "ya no está disponible"**, con la etiqueta según la operación: *"Ya se alquiló"*
+   para alquiler, *"Ya se vendió"* para venta. Sin vocabulario técnico. Reversible, igual
+   que el de publicado.
+2. **Eliminar**, que en realidad **archiva**. Para la dueña la experiencia es la misma:
+   toca eliminar y desaparece. Por dentro es un `UPDATE` de `archived_at`, recuperable con
+   otro `UPDATE`.
+
+**El borrado accidental es un riesgo real**, porque va a usar esto desde el celular. Por
+eso: el botón de eliminar **no va pegado a los toggles**, y el diálogo exige más que un
+"Aceptar" — muestra el título de la propiedad y pide una confirmación deliberada aparte.
+
+> **El filtro de archivadas va en RLS, no solo en la consulta.** Si una propiedad archivada
+> quedara con `published = true`, filtrar únicamente del lado del cliente la dejaría
+> visible para cualquiera que arme la consulta a mano. El script recrea las tres policies
+> de lectura pública sumando `archived_at is null`. El admin sigue viendo todo, que es lo
+> que permite recuperarla.
+
+**En el sitio público (6.6):** las no disponibles **no se ocultan** — mostrar que la
+inmobiliaria mueve propiedades es bueno comercialmente. Van **al final del listado** y
+**marcadas visiblemente**. Es trabajo sobre el frontend público, con su propia verificación
+visual, así que va en su propia sub-fase después del formulario.
 
 **Fase 6.5 — Campos nuevos en la ficha.** `expensas`, `frente_m`, `fondo_m`: secciones nuevas en `ProductDetailsReact.jsx`, con el mismo tri-estado. Solo si la dueña efectivamente carga esos datos.
 
@@ -720,6 +793,8 @@ Tier gratuito: **1 GB**. Casi todas las propiedades tienen `.mp4`. Los videos ac
 | 10 | Orden por precio produce `NaN` con "A consultar" | `Busqueda.jsx:111-112` | 🟡 Baja |
 | 11 | Clave `pk_test_` de Stripe versionada en git (pública, sin riesgo real, queda en el historial) | `Cart.jsx:9` | 🟡 Baja — `Cart.jsx` borrado en la Fase 0.5; la clave queda en el historial |
 | 12 | **`anon` tiene `REFERENCES`, `TRIGGER` y `TRUNCATE` sobre todas las tablas**, incluidas `property_notes` y `admins`. Vienen de los *default privileges* preexistentes del proyecto de Supabase, **no** de `scripts/fase1-grants.sql`, que solo otorga `SELECT` y las escrituras del panel a `authenticated` | esquema `public` en Supabase | 🟠 Media — **revisar después de la Fase 6** |
+
+| 13 | **Activar el "Inactivity timeout" del servidor de Supabase cuando el proyecto pase al plan Pro.** Hoy el cierre por inactividad es 100% del lado del cliente (Fase 6f). El ajuste del servidor es red de fondo, **no reemplazo**: para Supabase "actividad" es que se refresque el token, no que haya alguien usando el panel, y `supabase-js` refresca solo en segundo plano | Dashboard de Supabase → Auth → Sessions | 🟡 Baja — requiere plan Pro |
 
 | 12 | **`etiquetaZona()` detecta la ubicación reservada por dos vías**: `hide_location`, que expone el adaptador desde la Fase 3.5, y el centinela `'A consultar'` en `barrio` y `calle`, que es lo único que tiene el fallback de `data.jsx`. La segunda vía es deuda deliberada, no un descuido | `src/lib/format.js` (`formatUbicacion`, `etiquetaZona`) | 🟡 Baja — **se borra en la Fase 9** |
 

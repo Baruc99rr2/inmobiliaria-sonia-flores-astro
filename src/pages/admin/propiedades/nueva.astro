@@ -1,0 +1,11 @@
+---
+import AdminLayout from '../../../layouts/AdminLayout.astro';
+import FormularioPropiedad from '../../../components/admin/FormularioPropiedad.tsx';
+
+export const prerender = false;
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+---
+
+<AdminLayout title="Nueva propiedad — Panel Sonia Flores">
+  <FormularioPropiedad client:only="react" />
+</AdminLayout>
