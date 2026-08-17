@@ -3,6 +3,14 @@ import { ArrowLeftIcon } from 'lucide-react';
 import AdminGuard from '@/components/admin/AdminGuard';
 import AdminShell from '@/components/admin/AdminShell';
 import SelectorCatalogo from '@/components/admin/SelectorCatalogo';
+import CamposNumericos, { type ValoresNumericos } from '@/components/admin/CamposNumericos';
+import {
+  contableDesdeDb,
+  contableADb,
+  montoADb,
+  medidaDesdeDb,
+  medidaADb,
+} from '@/lib/admin/tri-estado';
 import { Button } from '@/components/admin/ui/button';
 import { Input } from '@/components/admin/ui/input';
 import { Label } from '@/components/admin/ui/label';
@@ -46,7 +54,56 @@ const VACIO: DatosBasicos = {
   price: null,
   show_price: true,
   price_from: false,
+  ambientes: null,
+  dormitorios: null,
+  banos: null,
+  cocheras: null,
+  expensas: null,
+  superficie_m2: null,
+  frente_m: null,
+  fondo_m: null,
 };
+
+const CONTABLE_VACIO = { noTiene: false, valor: '' };
+
+const NUMERICOS_VACIOS: ValoresNumericos = {
+  ambientes: CONTABLE_VACIO,
+  dormitorios: CONTABLE_VACIO,
+  banos: CONTABLE_VACIO,
+  cocheras: CONTABLE_VACIO,
+  expensas: CONTABLE_VACIO,
+  superficie_m2: '',
+  frente_m: '',
+  fondo_m: '',
+};
+
+/** base -> formulario. Es donde un 0 se confundiría con un NULL. */
+function numericosDesdeDb(p: DatosBasicos): ValoresNumericos {
+  return {
+    ambientes: contableDesdeDb(p.ambientes),
+    dormitorios: contableDesdeDb(p.dormitorios),
+    banos: contableDesdeDb(p.banos),
+    cocheras: contableDesdeDb(p.cocheras),
+    expensas: contableDesdeDb(p.expensas),
+    superficie_m2: medidaDesdeDb(p.superficie_m2),
+    frente_m: medidaDesdeDb(p.frente_m),
+    fondo_m: medidaDesdeDb(p.fondo_m),
+  };
+}
+
+/** formulario -> base. */
+function numericosADb(n: ValoresNumericos) {
+  return {
+    ambientes: contableADb(n.ambientes),
+    dormitorios: contableADb(n.dormitorios),
+    banos: contableADb(n.banos),
+    cocheras: contableADb(n.cocheras),
+    expensas: montoADb(n.expensas),
+    superficie_m2: medidaADb(n.superficie_m2),
+    frente_m: medidaADb(n.frente_m),
+    fondo_m: medidaADb(n.fondo_m),
+  };
+}
 
 const claseTextarea =
   'w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none ' +
@@ -59,6 +116,7 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
   const [errorCarga, setErrorCarga] = useState<string | null>(null);
   const [catalogos, setCatalogos] = useState<Catalogos>({ tipos: [], localidades: [], barrios: [] });
   const [datos, setDatos] = useState<DatosBasicos>(VACIO);
+  const [numericos, setNumericos] = useState<ValoresNumericos>(NUMERICOS_VACIOS);
   const [publicada, setPublicada] = useState(false);
 
   const [guardando, setGuardando] = useState(false);
@@ -92,6 +150,7 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
         }
         const { id: _i, legacy_id: _l, published, ...resto } = p.propiedad;
         setDatos(resto);
+        setNumericos(numericosDesdeDb(resto));
         setPublicada(published);
       }
       setCargando(false);
@@ -112,7 +171,11 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
     setGuardando(true);
     setErrorGuardar(null);
 
-    const r = esNueva ? await crearPropiedad(datos) : await actualizarPropiedad(id!, datos);
+    // Los numéricos se convierten recién acá: el formulario los guarda como
+    // texto + casilla, y la base los quiere como número o NULL.
+    const aGuardar: DatosBasicos = { ...datos, ...numericosADb(numericos) };
+
+    const r = esNueva ? await crearPropiedad(aGuardar) : await actualizarPropiedad(id!, aGuardar);
 
     if (r.ok) {
       if (esNueva && 'id' in r) {
@@ -308,6 +371,15 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
           </span>
         </label>
       </section>
+
+      {/* --- Numéricos (6c) --- */}
+      <CamposNumericos
+        valores={numericos}
+        onCambio={(v) => {
+          setNumericos(v);
+          setGuardado(false);
+        }}
+      />
 
       {/* --- Textos --- */}
       <section className="flex flex-col gap-4 rounded-xl border bg-card p-4">

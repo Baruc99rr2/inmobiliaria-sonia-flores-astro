@@ -24,7 +24,32 @@ export type DatosBasicos = {
   price: number | null;
   show_price: boolean;
   price_from: boolean;
+
+  // --- Numéricos (Fase 6c) ---
+  // Ya convertidos por `tri-estado.ts`: acá llegan como número o NULL, que es
+  // exactamente lo que va a la base. `0` significa "no tiene" y NO es lo mismo
+  // que `null`.
+  ambientes: number | null;
+  dormitorios: number | null;
+  banos: number | null;
+  cocheras: number | null;
+  expensas: number | null;
+  superficie_m2: number | null;
+  frente_m: number | null;
+  fondo_m: number | null;
 };
+
+/** Las claves numéricas, para leerlas de vuelta después de guardar. */
+export const CLAVES_NUMERICAS = [
+  'ambientes',
+  'dormitorios',
+  'banos',
+  'cocheras',
+  'expensas',
+  'superficie_m2',
+  'frente_m',
+  'fondo_m',
+] as const;
 
 export type PropiedadEdicion = DatosBasicos & {
   id: string;
@@ -70,8 +95,11 @@ export async function obtenerPropiedad(id: string): Promise<
 
   const { data, error } = await supabase
     .from('properties')
+    // Literal y no concatenado: supabase-js infiere el tipo del resultado a
+    // partir del texto del select, y una cadena armada en tiempo de ejecución le
+    // hace perder la inferencia entera.
     .select(
-      'id, legacy_id, name, description, requisitos, operation, property_type_id, localidad_id, neighborhood_id, price, show_price, price_from, published'
+      'id, legacy_id, name, description, requisitos, operation, property_type_id, localidad_id, neighborhood_id, price, show_price, price_from, published, ambientes, dormitorios, banos, cocheras, expensas, superficie_m2, frente_m, fondo_m'
     )
     .eq('id', id)
     .maybeSingle();
@@ -98,6 +126,20 @@ export async function obtenerPropiedad(id: string): Promise<
       show_price: data.show_price !== false,
       price_from: data.price_from === true,
       published: data.published === true,
+
+      // `?? null` y no `|| null`: un 0 legítimo ("no tiene") no puede
+      // convertirse en null acá, que es la trampa de que 0 sea falsy.
+      ambientes: data.ambientes ?? null,
+      dormitorios: data.dormitorios ?? null,
+      banos: data.banos ?? null,
+      cocheras: data.cocheras ?? null,
+      expensas: data.expensas === null || data.expensas === undefined ? null : Number(data.expensas),
+      superficie_m2:
+        data.superficie_m2 === null || data.superficie_m2 === undefined
+          ? null
+          : Number(data.superficie_m2),
+      frente_m: data.frente_m === null || data.frente_m === undefined ? null : Number(data.frente_m),
+      fondo_m: data.fondo_m === null || data.fondo_m === undefined ? null : Number(data.fondo_m),
     },
   };
 }
@@ -117,6 +159,17 @@ function aFila(d: DatosBasicos, slug: string) {
     price: d.price,
     show_price: d.show_price,
     price_from: d.price_from,
+
+    // Van tal cual: `tri-estado.ts` ya decidió entre número y NULL, y un 0
+    // significa "no tiene". No se filtran ni se normalizan de nuevo acá.
+    ambientes: d.ambientes,
+    dormitorios: d.dormitorios,
+    banos: d.banos,
+    cocheras: d.cocheras,
+    expensas: d.expensas,
+    superficie_m2: d.superficie_m2,
+    frente_m: d.frente_m,
+    fondo_m: d.fondo_m,
   };
 }
 

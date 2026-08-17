@@ -63,6 +63,29 @@ Normalización **terminada y verificada** en la Fase 0. Servicios reducidos a se
 
 **`categoryItem` es un export muerto**: no lo importa nadie. No hay que migrarlo ni preservarlo. Se va con `data.jsx` en la Fase 9.
 
+### ⚠️ Dos fuentes de verdad: `data.jsx` y la base
+
+> **Mientras `data.jsx` exista, correr la migración pisa con su contenido todo lo que se
+> haya editado desde el panel o por SQL.**
+
+Hoy alcanza a **título, precio, descripción, tipo, localidad, barrio y todo lo que edita el
+formulario**. Ya pasó una vez: `scripts/fase6-estado-propiedad.sql` limpió el prefijo
+`-ALQUILADA-` de dos títulos, se recorrió la migración, y los títulos volvieron sucios
+porque `data.jsx` todavía los tenía así. El sitio público quedó mostrando
+*"-ALQUILADA-CASA en Calle Belgrano"* hasta que se corrigió el origen.
+
+**La regla mientras tanto:**
+
+1. La migración se corre **solo para agregar propiedades nuevas**, nunca como "refrescar
+   todo".
+2. **Antes de correrla**, verificar que `data.jsx` refleje los cambios hechos desde el
+   panel. Si no, esos cambios se pierden.
+3. Las columnas que **no** están en `data.jsx` —`estado`, `archived_at`, `published`— sí
+   sobreviven, porque la migración no las toca.
+
+Esto desaparece en la **Fase 9**, cuando se borre `data.jsx` y la base quede como única
+fuente de verdad.
+
 ---
 
 ## 2. Reglas de negocio
