@@ -37,6 +37,19 @@ export type DatosBasicos = {
   superficie_m2: number | null;
   frente_m: number | null;
   fondo_m: number | null;
+
+  // --- Dirección y extras (Fase 6d) ---
+  calle: string;
+  numero: string;
+  /** Muestra la altura de la calle. Si está en false se ve la calle sin número. */
+  show_exact_address: boolean;
+  /**
+   * Oculta barrio y calle EN EL TEXTO. **No oculta el mapa**: el mapa se sigue
+   * mostrando apuntando a la zona real, que es una decisión explícita de la
+   * dueña (§2.2 del plan). Nada de difuminar ni desplazar coordenadas.
+   */
+  hide_location: boolean;
+  adicionales: string[];
 };
 
 /** Las claves numéricas, para leerlas de vuelta después de guardar. */
@@ -99,7 +112,7 @@ export async function obtenerPropiedad(id: string): Promise<
     // partir del texto del select, y una cadena armada en tiempo de ejecución le
     // hace perder la inferencia entera.
     .select(
-      'id, legacy_id, name, description, requisitos, operation, property_type_id, localidad_id, neighborhood_id, price, show_price, price_from, published, ambientes, dormitorios, banos, cocheras, expensas, superficie_m2, frente_m, fondo_m'
+      'id, legacy_id, name, description, requisitos, operation, property_type_id, localidad_id, neighborhood_id, price, show_price, price_from, published, ambientes, dormitorios, banos, cocheras, expensas, superficie_m2, frente_m, fondo_m, calle, numero, show_exact_address, hide_location, adicionales'
     )
     .eq('id', id)
     .maybeSingle();
@@ -140,8 +153,58 @@ export async function obtenerPropiedad(id: string): Promise<
           : Number(data.superficie_m2),
       frente_m: data.frente_m === null || data.frente_m === undefined ? null : Number(data.frente_m),
       fondo_m: data.fondo_m === null || data.fondo_m === undefined ? null : Number(data.fondo_m),
+
+      calle: data.calle ?? '',
+      numero: data.numero ?? '',
+      show_exact_address: data.show_exact_address === true,
+      hide_location: data.hide_location === true,
+      adicionales: Array.isArray(data.adicionales) ? data.adicionales : [],
     },
   };
+}
+
+/** Los ids de servicio que tiene marcados una propiedad. */
+export async function obtenerServicios(id: string): Promise<number[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('property_services')
+    .select('service_id')
+    .eq('property_id', id);
+  if (error) {
+    console.error('[admin] obtenerServicios:', error.message);
+    return [];
+  }
+  return (data ?? []).map((r: any) => r.service_id);
+}
+
+/**
+ * Guarda los servicios como diferencia, no borrando todo y reinsertando.
+ *
+ * Borrar primero y volver a insertar deja una ventana en la que, si el insert
+ * falla, la propiedad se queda sin ningún servicio. Con la diferencia, un fallo
+ * afecta solo a lo que cambió.
+ */
+async function guardarServicios(propertyId: string, elegidos: number[]) {
+  if (!supabase) return;
+
+  const actuales = await obtenerServicios(propertyId);
+  const aAgregar = elegidos.filter((id) => !actuales.includes(id));
+  const aQuitar = actuales.filter((id) => !elegidos.includes(id));
+
+  if (aAgregar.length) {
+    const { error } = await supabase
+      .from('property_services')
+      .insert(aAgregar.map((service_id) => ({ property_id: propertyId, service_id })));
+    if (error) console.error('[admin] guardarServicios (agregar):', error.message);
+  }
+  if (aQuitar.length) {
+    const { error } = await supabase
+      .from('property_services')
+      .delete()
+      .eq('property_id', propertyId)
+      .in('service_id', aQuitar);
+    if (error) console.error('[admin] guardarServicios (quitar):', error.message);
+  }
 }
 
 function aFila(d: DatosBasicos, slug: string) {
@@ -170,11 +233,19 @@ function aFila(d: DatosBasicos, slug: string) {
     superficie_m2: d.superficie_m2,
     frente_m: d.frente_m,
     fondo_m: d.fondo_m,
+
+    // `calle` y `numero` son `not null default ''` en la base: van como cadena
+    // vacía y no como NULL.
+    calle: d.calle.trim(),
+    numero: d.numero.trim(),
+    show_exact_address: d.show_exact_address,
+    hide_location: d.hide_location,
+    adicionales: d.adicionales.map((a) => a.trim()).filter(Boolean),
   };
 }
 
 /** Alta. Siempre como BORRADOR: publicar es un botón aparte y explícito. */
-export async function crearPropiedad(d: DatosBasicos) {
+export async function crearPropiedad(d: DatosBasicos, servicios: number[] = []) {
   if (!supabase) return { ok: false as const, error: 'No hay conexión con la base de datos.' };
 
   const problema = validar(d);
@@ -191,10 +262,12 @@ export async function crearPropiedad(d: DatosBasicos) {
     console.error('[admin] crearPropiedad:', error.message);
     return { ok: false as const, error: 'No pudimos guardar la propiedad. Probá de nuevo.' };
   }
+
+  await guardarServicios(data.id as string, servicios);
   return { ok: true as const, id: data.id as string };
 }
 
-export async function actualizarPropiedad(id: string, d: DatosBasicos) {
+export async function actualizarPropiedad(id: string, d: DatosBasicos, servicios: number[] = []) {
   if (!supabase) return { ok: false as const, error: 'No hay conexión con la base de datos.' };
 
   const problema = validar(d);
@@ -207,5 +280,7 @@ export async function actualizarPropiedad(id: string, d: DatosBasicos) {
     console.error('[admin] actualizarPropiedad:', error.message);
     return { ok: false as const, error: 'No pudimos guardar los cambios. Probá de nuevo.' };
   }
+
+  await guardarServicios(id, servicios);
   return { ok: true as const };
 }

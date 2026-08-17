@@ -14,15 +14,21 @@ import { slugify } from '../zonas';
 export type Tipo = { id: number; slug: string; label: string };
 export type Localidad = { id: number; slug: string; label: string };
 export type Barrio = { id: number; localidad_id: number; slug: string; label: string };
+export type Servicio = { id: number; slug: string; label: string };
 
-export type Catalogos = { tipos: Tipo[]; localidades: Localidad[]; barrios: Barrio[] };
+export type Catalogos = {
+  tipos: Tipo[];
+  localidades: Localidad[];
+  barrios: Barrio[];
+  servicios: Servicio[];
+};
 
 export async function cargarCatalogos(): Promise<
   { ok: true; catalogos: Catalogos } | { ok: false; error: string }
 > {
   if (!supabase) return { ok: false, error: 'No hay conexión con la base de datos.' };
 
-  const [t, l, b] = await Promise.all([
+  const [t, l, b, s] = await Promise.all([
     supabase.from('property_types').select('id, slug, label').eq('active', true).order('sort_order'),
     supabase.from('localidades').select('id, slug, label').eq('active', true).order('label'),
     supabase
@@ -30,10 +36,14 @@ export async function cargarCatalogos(): Promise<
       .select('id, localidad_id, slug, label')
       .eq('active', true)
       .order('label'),
+    supabase.from('services').select('id, slug, label').eq('active', true).order('sort_order'),
   ]);
 
-  if (t.error || l.error || b.error) {
-    console.error('[admin] cargarCatalogos:', t.error?.message ?? l.error?.message ?? b.error?.message);
+  if (t.error || l.error || b.error || s.error) {
+    console.error(
+      '[admin] cargarCatalogos:',
+      t.error?.message ?? l.error?.message ?? b.error?.message ?? s.error?.message
+    );
     return { ok: false, error: 'No pudimos traer las listas de tipos, localidades y barrios.' };
   }
 
@@ -43,6 +53,7 @@ export async function cargarCatalogos(): Promise<
       tipos: (t.data ?? []) as Tipo[],
       localidades: (l.data ?? []) as Localidad[],
       barrios: (b.data ?? []) as Barrio[],
+      servicios: (s.data ?? []) as Servicio[],
     },
   };
 }

@@ -4,6 +4,9 @@ import AdminGuard from '@/components/admin/AdminGuard';
 import AdminShell from '@/components/admin/AdminShell';
 import SelectorCatalogo from '@/components/admin/SelectorCatalogo';
 import CamposNumericos, { type ValoresNumericos } from '@/components/admin/CamposNumericos';
+import CamposTags from '@/components/admin/CamposTags';
+import CamposDireccion from '@/components/admin/CamposDireccion';
+import { Checkbox } from '@/components/admin/ui/checkbox';
 import {
   contableDesdeDb,
   contableADb,
@@ -26,6 +29,7 @@ import {
 } from '@/lib/admin/catalogos';
 import {
   obtenerPropiedad,
+  obtenerServicios,
   crearPropiedad,
   actualizarPropiedad,
   REQUISITOS_ESTANDAR,
@@ -62,6 +66,11 @@ const VACIO: DatosBasicos = {
   superficie_m2: null,
   frente_m: null,
   fondo_m: null,
+  calle: '',
+  numero: '',
+  show_exact_address: false,
+  hide_location: false,
+  adicionales: [],
 };
 
 const CONTABLE_VACIO = { noTiene: false, valor: '' };
@@ -114,7 +123,13 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
 
   const [cargando, setCargando] = useState(true);
   const [errorCarga, setErrorCarga] = useState<string | null>(null);
-  const [catalogos, setCatalogos] = useState<Catalogos>({ tipos: [], localidades: [], barrios: [] });
+  const [catalogos, setCatalogos] = useState<Catalogos>({
+    tipos: [],
+    localidades: [],
+    barrios: [],
+    servicios: [],
+  });
+  const [servicios, setServicios] = useState<number[]>([]);
   const [datos, setDatos] = useState<DatosBasicos>(VACIO);
   const [numericos, setNumericos] = useState<ValoresNumericos>(NUMERICOS_VACIOS);
   const [publicada, setPublicada] = useState(false);
@@ -152,6 +167,7 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
         setDatos(resto);
         setNumericos(numericosDesdeDb(resto));
         setPublicada(published);
+        setServicios(await obtenerServicios(id));
       }
       setCargando(false);
     })();
@@ -175,7 +191,9 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
     // texto + casilla, y la base los quiere como número o NULL.
     const aGuardar: DatosBasicos = { ...datos, ...numericosADb(numericos) };
 
-    const r = esNueva ? await crearPropiedad(aGuardar) : await actualizarPropiedad(id!, aGuardar);
+    const r = esNueva
+      ? await crearPropiedad(aGuardar, servicios)
+      : await actualizarPropiedad(id!, aGuardar, servicios);
 
     if (r.ok) {
       if (esNueva && 'id' in r) {
@@ -380,6 +398,57 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
           setGuardado(false);
         }}
       />
+
+      {/* --- Dirección (6d) --- */}
+      <CamposDireccion
+        calle={datos.calle}
+        numero={datos.numero}
+        showExactAddress={datos.show_exact_address}
+        hideLocation={datos.hide_location}
+        onCambio={(parcial) => {
+          setDatos((d) => ({ ...d, ...parcial }));
+          setGuardado(false);
+        }}
+      />
+
+      {/* --- Servicios y adicionales (6d) --- */}
+      <section className="flex flex-col gap-5 rounded-xl border bg-card p-4">
+        <div className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold">Servicios</h2>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {catalogos.servicios.map((s) => {
+              const marcado = servicios.includes(s.id);
+              return (
+                <label key={s.id} className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    checked={marcado}
+                    onCheckedChange={(v) => {
+                      setServicios((prev) =>
+                        v === true ? [...prev, s.id] : prev.filter((x) => x !== s.id)
+                      );
+                      setGuardado(false);
+                    }}
+                    aria-label={s.label}
+                  />
+                  <span>{s.label}</span>
+                </label>
+              );
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Marcá los que tiene. Si no marcás ninguno, en la web no aparece la sección.
+          </p>
+        </div>
+
+        <div className="border-t pt-4">
+          <CamposTags
+            valores={datos.adicionales}
+            onCambio={(v) => {
+              set('adicionales', v);
+            }}
+          />
+        </div>
+      </section>
 
       {/* --- Textos --- */}
       <section className="flex flex-col gap-4 rounded-xl border bg-card p-4">
