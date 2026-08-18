@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { HouseIcon, TagsIcon, LogOutIcon, SunIcon, MoonIcon } from 'lucide-react';
+import { HouseIcon, TagsIcon, CalendarDaysIcon, LogOutIcon, SunIcon, MoonIcon } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -35,10 +35,13 @@ import { temaActual, guardarTema, type Tema } from '@/lib/tema-panel';
  * en blanco: las secciones se van agregando a medida que se construyen.
  */
 
-type Seccion = 'propiedades' | 'catalogos';
+type Seccion = 'propiedades' | 'agenda' | 'catalogos';
 
 const NAVEGACION: Array<{ id: Seccion; titulo: string; href: string; icono: ReactNode }> = [
   { id: 'propiedades', titulo: 'Propiedades', href: '/admin', icono: <HouseIcon /> },
+  // "Agenda" y no "Calendario": es la palabra que ella ya usa para esto, y
+  // describe para qué sirve en vez de con qué está hecho.
+  { id: 'agenda', titulo: 'Agenda', href: '/admin/agenda', icono: <CalendarDaysIcon /> },
   { id: 'catalogos', titulo: 'Catálogos', href: '/admin/catalogos', icono: <TagsIcon /> },
 ];
 
