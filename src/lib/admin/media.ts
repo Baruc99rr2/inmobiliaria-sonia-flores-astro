@@ -118,6 +118,115 @@ export async function obtenerUsoStorage(): Promise<UsoStorage | null> {
   };
 }
 
+/**
+ * LA REGLA DE LA PORTADA (Fase 7d).
+ *
+ * El primer elemento tiene que ser una imagen. `ProductList`, `Carrusel` y
+ * `PropertyMap` toman el primero para la portada; con un video ahí, la portada
+ * se rompe.
+ *
+ * La Fase 7a ya blinda el sitio público —`portadaDe()` saltea videos—, pero eso
+ * es la red de abajo. Acá se impide que el dato quede mal de entrada, que es
+ * mejor: si la web muestra la segunda foto porque la primera es un video, ella
+ * no entiende por qué la portada no es la que puso.
+ *
+ * Devuelve el mensaje de error, o `null` si el orden es válido.
+ */
+export function validarPortada(items: Pick<MediaItem, 'kind'>[]): string | null {
+  if (items.length === 0) return null;
+  if (items[0].kind !== 'video') return null;
+  if (!items.some((m) => m.kind === 'image')) {
+    // Solo videos: no hay forma de cumplir la regla, y bloquear no ayudaría.
+    return null;
+  }
+  return 'La primera tiene que ser una foto, porque es la que se ve en el listado y en la página principal. Poné una foto adelante y el video después.';
+}
+
+/** Reacomoda `sort_order` para que sea 0,1,2… sin huecos. */
+export function reordenar(items: MediaItem[], desde: number, hasta: number): MediaItem[] {
+  const copia = [...items];
+  const [movido] = copia.splice(desde, 1);
+  copia.splice(hasta, 0, movido);
+  return copia.map((m, i) => ({ ...m, sort_order: i }));
+}
+
+/**
+ * Guarda el orden nuevo.
+ *
+ * Se actualiza fila por fila y no con un upsert masivo a propósito: el upsert
+ * de supabase-js necesita mandar todas las columnas NOT NULL, y un descuido ahí
+ * borraría `url` o `kind`. Son a lo sumo 20 filas por propiedad.
+ */
+export async function guardarOrden(
+  items: MediaItem[]
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!supabase) return { ok: false, error: 'No hay conexión con la base de datos.' };
+
+  const problema = validarPortada(items);
+  if (problema) return { ok: false, error: problema };
+
+  // Se escriben TODAS las filas, sin saltear las que "ya están en su lugar".
+  //
+  // La primera versión tenía `if (items[i].sort_order === i) continue`, y era un
+  // bug silencioso: `reordenar()` renumera el arreglo antes de llegar acá, así
+  // que esa condición era verdadera siempre y no se escribía ni una fila.
+  // `guardarOrden` devolvía ok, la pantalla mostraba el orden nuevo y la base
+  // seguía con el viejo — se descubría recién al recargar. Saltear solo tendría
+  // sentido comparando contra lo que hay en la base, y para eso habría que ir a
+  // buscarlo: son 20 filas como mucho, no vale la pena.
+  for (let i = 0; i < items.length; i++) {
+    const { error } = await supabase
+      .from('property_media')
+      .update({ sort_order: i })
+      .eq('id', items[i].id);
+    if (error) {
+      console.error('[admin] guardarOrden:', error.message);
+      return { ok: false, error: 'No pudimos guardar el orden nuevo. Probá de nuevo.' };
+    }
+  }
+  return { ok: true };
+}
+
+/**
+ * Borra una foto o video.
+ *
+ * >>> EL ORDEN DE LAS DOS BAJAS IMPORTA. <<<
+ *
+ * Primero la fila, después el objeto del bucket. Si se hiciera al revés y
+ * fallara el borrado de la fila, quedaría una fila apuntando a un archivo que
+ * ya no está: imagen rota en la web. Al derecho, lo peor que puede pasar es un
+ * archivo huérfano en el bucket, que ocupa espacio pero no se ve. De los dos
+ * males, el que no se le muestra a un cliente.
+ *
+ * Las filas LEGACY (`storage_path` en NULL) son archivos del repo: se borra la
+ * fila y nada más. Borrar el archivo no corresponde —está en git— y encima no
+ * está en el bucket.
+ */
+export async function borrarMedia(
+  item: MediaItem
+): Promise<{ ok: true; huerfano: boolean } | { ok: false; error: string }> {
+  if (!supabase) return { ok: false, error: 'No hay conexión con la base de datos.' };
+
+  const { error } = await supabase.from('property_media').delete().eq('id', item.id);
+  if (error) {
+    console.error('[admin] borrarMedia fila:', error.message);
+    return { ok: false, error: 'No pudimos borrar este archivo. Probá de nuevo.' };
+  }
+
+  if (esLegacy(item)) return { ok: true, huerfano: false };
+
+  const { error: eObj } = await supabase.storage.from(BUCKET).remove([item.storage_path!]);
+  if (eObj) {
+    // La fila ya no está, así que en la web desapareció. El archivo quedó
+    // ocupando lugar. No se le muestra como error —lo que ella pidió, se hizo—
+    // pero queda en la consola para poder limpiarlo después.
+    console.error('[admin] quedó huérfano en el bucket:', item.storage_path, eObj.message);
+    return { ok: true, huerfano: true };
+  }
+
+  return { ok: true, huerfano: false };
+}
+
 /** "1,4 MB" / "820 KB". Para que se entienda sin saber qué es un byte. */
 export function formatearBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 KB';
