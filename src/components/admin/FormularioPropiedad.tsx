@@ -9,6 +9,7 @@ import CamposTags from '@/components/admin/CamposTags';
 import CamposDireccion from '@/components/admin/CamposDireccion';
 import CampoMapa from '@/components/admin/CampoMapa';
 import GaleriaMedia from '@/components/admin/GaleriaMedia';
+import NotasPropiedad from '@/components/admin/NotasPropiedad';
 import { Checkbox } from '@/components/admin/ui/checkbox';
 import {
   contableDesdeDb,
@@ -488,6 +489,9 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
           setGuardado(false);
         }}
       />
+
+      {/* --- Notas privadas (8a) --- */}
+      <NotasPropiedad propiedadId={id} />
 
       {/* --- Fotos y video (7b) --- */}
       <GaleriaMedia propiedadId={id} />
