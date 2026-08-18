@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { productsData } from "../../data";
 import { construirOpciones, zonaDeProducto, tipoDeProducto } from "../../lib/zonas";
+import { disponiblesPrimero } from "../../lib/mapProperty";
 
 import SearchFilters from "./SearchFilters";
 import MobileFiltersModal from "./MobileFiltersModal";
@@ -137,14 +138,21 @@ const Busqueda = ({ products: productsProp, catalogos }) => {
   }, [products, activeFilters]);
 
   // Ordenamiento
+  //
+  // Las alquiladas y vendidas quedan al final CUALQUIERA SEA el orden elegido:
+  // `disponiblesPrimero` se aplica después, como criterio exterior. Si no,
+  // ordenar por precio las mezclaría entre las disponibles y quien busca algo
+  // para alquilar se cruzaría con propiedades que ya no puede alquilar.
+  // `sort` es estable, así que adentro de cada grupo se respeta lo que eligió.
   const sortedProducts = useMemo(() => {
-    return [...filteredProducts].sort((a, b) => {
+    const ordenados = [...filteredProducts].sort((a, b) => {
       if (sortBy === "price-asc") return (a.price || 0) - (b.price || 0);
       if (sortBy === "price-desc") return (b.price || 0) - (a.price || 0);
       if (sortBy === "title") return a.name.localeCompare(b.name);
       if (sortBy === "antiguedad") return (a.detalles?.antiguedad || 0) - (b.detalles?.antiguedad || 0);
       return 0;
     });
+    return disponiblesPrimero(ordenados);
   }, [filteredProducts, sortBy]);
 
   const currentItems = sortedProducts.slice(

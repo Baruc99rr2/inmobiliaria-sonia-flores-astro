@@ -10,6 +10,7 @@ import {
   ORIGEN_FALLBACK,
 } from '../../lib/properties';
 import { productsData } from '../../data';
+import { getConfiguracionSitio } from '../../lib/configuracion-sitio-server';
 
 // Fase 3: se cae `getStaticPaths`. Antes generaba 18 páginas fijas en el build,
 // así que una propiedad nueva cargada desde el panel no iba a existir hasta el
@@ -33,6 +34,9 @@ const product = resultado.ok
   : (productsData.find((p) => p.id === legacyId) ?? null);
 
 const desdeFallback = !resultado.ok && product !== null;
+
+// Fase 6.6: los datos de contacto salen de la base, no del codigo.
+const configuracion = await getConfiguracionSitio();
 
 const siteOrigin = Astro.url.origin;
 const currentUrl = Astro.url.href;
@@ -70,7 +74,12 @@ const mainImage = mainImageRaw
       description={product.description}
       image={mainImage}
     >
-      <ProductDetailsReact client:only="react" product={product} currentUrl={currentUrl} />
+      <ProductDetailsReact
+        client:only="react"
+        product={product}
+        currentUrl={currentUrl}
+        configuracion={configuracion}
+      />
     </Layout>
   ) : (
     <Layout

@@ -585,17 +585,6 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
             Se guarda por propiedad: podés borrarlo o escribir otra cosa según el caso.
           </p>
 
-          {/* Aviso temporal. El campo se guarda bien pero todavía no lo muestra
-              ninguna pantalla del sitio: falta renderizarlo y, además, sacar el
-              bloque que hoy está pegado dentro de la descripción de 10
-              propiedades, o se vería duplicado. Va en la Fase 6.6. */}
-          <Alert>
-            <AlertDescription className="text-xs">
-              Por ahora este texto <strong>todavía no se muestra en la web</strong>. Se guarda
-              bien y va a aparecer cuando terminemos esa parte. Si necesitás que se vea ya,
-              escribilo también en la descripción.
-            </AlertDescription>
-          </Alert>
         </div>
       </section>
 

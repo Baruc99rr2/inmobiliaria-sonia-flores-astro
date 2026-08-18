@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { estaDisponible } from "../lib/mapProperty";
 // Importación directa de los datos sin depender de ShopContext
 import { productsData } from "../data";
 import { MdLocationOn } from 'react-icons/md';
@@ -179,8 +180,18 @@ const Carrusel = ({ products: productsProp }) => {
 
   const isMobile = width < 640;
 
+  // Este carrusel es el escaparate de la home y toma las ÚLTIMAS 7.
+  //
+  // SOLO DISPONIBLES, sin excepción y sin volver al listado completo cuando
+  // quedan pocas. Un escaparate corto es mejor que uno lleno de propiedades que
+  // ya no se pueden alquilar. En el listado de búsqueda sí van, marcadas y al
+  // final; recomendar algo que ya no está es otra cosa.
+  //
+  // Si no queda ninguna disponible, el componente devuelve `null` más abajo en
+  // vez de dibujar un carrusel vacío.
   const baseProducts = useMemo(() => {
-    return products && products.length > 0 ? products.slice(-7) : [];
+    if (!products || products.length === 0) return [];
+    return products.filter(estaDisponible).slice(-7);
   }, [products]);
 
   const totalItems = baseProducts.length;
@@ -201,9 +212,13 @@ const Carrusel = ({ products: productsProp }) => {
     height: isMobile ? "230px" : "320px"
   };
 
+  // Sin disponibles no hay escaparate. Se devuelve `null` en vez de la sección
+  // vacía: el título "Recomendaciones" sobre la nada queda peor que no estar.
+  if (totalItems === 0) return null;
+
   return (
-    <div 
-      id="recommendations-section" 
+    <div
+      id="recommendations-section"
       className="relative w-full pt-24 pb-40 overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-black animate-gradient-slow"
       style={{
         backgroundSize: '400% 400%'

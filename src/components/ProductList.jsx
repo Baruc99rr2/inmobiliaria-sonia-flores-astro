@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { estaDisponible } from "../lib/mapProperty";
 // Importamos los datos directamente sin usar Context
 import { productsData } from "../data"; 
 import { MdLocationOn, MdOutlineBathtub } from 'react-icons/md';
@@ -120,7 +121,17 @@ const ProductList = ({ products: productsProp }) => {
   // Fase 3: los datos llegan por prop desde index.astro. `data.jsx` queda como
   // fallback si la consulta a Supabase falla, hasta que se borre en la Fase 9.
   const products = productsProp ?? productsData ?? [];
-  const baseProducts = products.slice(0, 10);
+
+  // "Últimas Novedades" es escaparate, igual que el carrusel: SOLO disponibles.
+  //
+  // Antes era `products.slice(0, 10)` a secas. Hoy no se nota, porque las no
+  // disponibles se ordenan al final y las primeras 10 son todas disponibles,
+  // pero es una bomba de tiempo: en cuanto haya menos de 10 disponibles, las
+  // alquiladas empiezan a entrar acá. Se filtra explícito en vez de confiar en
+  // el orden.
+  //
+  // Sin fallback al listado completo, por el mismo motivo que el carrusel.
+  const baseProducts = products.filter(estaDisponible).slice(0, 10);
 
   return (
     <div id="latest-listings" className="animated-gradient-bg w-full pt-20 pb-28 overflow-hidden relative">
