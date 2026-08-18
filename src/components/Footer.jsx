@@ -31,12 +31,22 @@ const Footer = () => {
     e.preventDefault();
     if (enviando) return;
 
+    // Puede llegar un click (el botón es `type="button"`, ver el comentario del
+    // <form>) o un submit. Desde un botón, `.form` da el formulario; desde el
+    // submit, el formulario ES el currentTarget.
+    const form = e.currentTarget?.form ?? e.currentTarget ?? null;
+
+    // Al no haber botón submit, el navegador ya no valida `required` solo. Se le
+    // pide explícitamente para que el visitante siga viendo los mismos avisos de
+    // campo obligatorio de siempre.
+    if (form?.reportValidity && !form.reportValidity()) return;
+
     // Honeypot: si viene con contenido, es un bot. Cortamos sin avisarle nada.
     // Sigue teniendo sentido en el cliente —su gracia es que el bot complete un
     // campo que un humano no ve—, pero el LÍMITE DE ENVÍOS ya no está acá: lo
     // hace un trigger en la base, porque un tope en JavaScript se saltea
     // abriendo la consola. Ver `scripts/fase85-contacto.sql`.
-    if (e.target.botcheck?.checked) return;
+    if (form?.botcheck?.checked) return;
 
     setEnviando(true);
     setResultado(null);
@@ -83,6 +93,16 @@ const Footer = () => {
             />
           </div>
 
+          {/* `method="post"` y `action` vacío NO alcanzan: sin JavaScript, un
+              <form> con un botón submit manda los datos por GET a la URL actual.
+              Se comprobó: el nombre, el correo, el teléfono y el mensaje del
+              visitante terminaron en la barra de direcciones, y de ahí van al
+              historial del navegador y a los registros del servidor.
+              Este formulario NO funciona sin JavaScript de ninguna manera —el
+              envío lo hace React—, así que la única salida sensata es que sin JS
+              no pase nada, en vez de que se filtren datos. Por eso el botón es
+              `type="button"`: sin submit no hay envío nativo, y sin botón submit
+              tampoco hay envío implícito al apretar Enter. */}
           <form onSubmit={handleSubmit} className='space-y-3 bg-black/30 p-4 rounded-xl border border-white/5 backdrop-blur-sm shadow-xl'>
             <h3 className='text-sm font-semibold tracking-wide border-b border-white/10 pb-1.5 mb-1'>Formulario de Contacto</h3>
             
@@ -135,7 +155,8 @@ const Footer = () => {
             />
 
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               disabled={enviando}
               className={`w-full text-white font-bold uppercase text-xs tracking-wider py-2.5 rounded-md transition-all duration-300 shadow-md ${
                 enviando
