@@ -7,6 +7,11 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { formatTriEstado, formatMedida, formatUbicacion, etiquetaZona } from '../lib/format';
 import { estaDisponible } from '../lib/mapProperty';
+import {
+    CONFIGURACION_POR_DEFECTO,
+    lineaDeContacto,
+    lineaDeMatricula,
+} from '../lib/configuracion-sitio';
 
 // Las claves tienen que coincidir con los labels del catálogo `services`
 // (§5.3 del plan): Agua, Luz, Gas, Cloaca, Pavimento, Wifi.
@@ -29,7 +34,10 @@ const serviceIcons = {
 const iconoDeServicio = (nombre) =>
     serviceIcons[String(nombre ?? '').trim().toLowerCase()] ?? <BiBlanket />;
 
-const ProductDetailsReact = ({ product, currentUrl }) => {
+const ProductDetailsReact = ({ product, currentUrl, configuracion }) => {
+    // El fallback cubre que la consulta falle: la ficha nunca puede quedarse sin
+    // telefono. Una inmobiliaria sin forma de contacto es peor que una sin fotos.
+    const contacto = configuracion ?? CONFIGURACION_POR_DEFECTO;
     const [currentImgIndex, setCurrentImgIndex] = useState(0);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isMapFullscreen, setIsMapFullscreen] = useState(false);
@@ -69,7 +77,10 @@ const ProductDetailsReact = ({ product, currentUrl }) => {
     const propertyTitle = product.name;
     const categoryUpper = product.category ? product.category.toUpperCase() : 'VENTA';
     
-    const shareText = `INMOBILIARIA SONIA FLORES\n${categoryUpper}\n${propertyTitle}\n\n${product.description || ''}\n\nPara más información comunicarse al 3884881245 de 9 a 13 y de 16 a 18hs.\nMartillera Sonia Flores MP 177.`;
+    // Fase 6.6: el contacto sale de la configuración, no hardcodeado acá. Antes
+    // esta plantilla tenía el teléfono escrito a mano, y además la propiedad 18
+    // lo repetía dentro de su descripción: al compartirla salía dos veces.
+    const shareText = `INMOBILIARIA SONIA FLORES\n${categoryUpper}\n${propertyTitle}\n\n${product.description || ''}\n\n${lineaDeContacto(contacto)}\n${lineaDeMatricula(contacto)}`;
 
     const shareLinks = [
         { platform: 'WhatsApp', url: `https://wa.me/?text=${encodeURIComponent(shareText + "\n\n" + currentUrl)}`, icon: <BiLogoWhatsapp size={24} /> },
@@ -189,10 +200,10 @@ const ProductDetailsReact = ({ product, currentUrl }) => {
                                     <p className="font-bold text-gray-900">
                                         Esta propiedad ya no está disponible
                                     </p>
+                                    {/* Sin decir si se alquiló o se vendió: eso le
+                                        sirve a un competidor y no al cliente.
+                                        Ver `etiquetaEstado` en mapProperty.ts. */}
                                     <p className="mt-0.5 text-sm text-gray-600">
-                                        {product.category?.toLowerCase() === 'alquiler'
-                                            ? 'Ya se alquiló.'
-                                            : 'Ya se vendió.'}{' '}
                                         La dejamos publicada como referencia. Escribinos y te
                                         contamos qué tenemos parecido.
                                     </p>
@@ -228,6 +239,39 @@ const ProductDetailsReact = ({ product, currentUrl }) => {
                     <div className="bg-white p-5 sm:p-8 rounded-2xl border border-gray-100 shadow-sm">
                         <h3 className="text-xl font-bold mb-4">Descripción</h3>
                         <p className='text-gray-600 leading-relaxed text-[15px] sm:text-lg whitespace-pre-line'>{product.description}</p>
+                    </div>
+
+                    {/* Fase 6.6: el contacto va en TODAS las fichas.
+                        Antes solo la propiedad 18 lo tenía, porque estaba
+                        escrito adentro de su descripción. Ahora sale de
+                        `site_settings`, que la dueña edita desde Catálogos. */}
+                    <div className="bg-white p-5 sm:p-8 rounded-2xl border border-gray-100 shadow-sm">
+                        <h3 className="text-xl font-bold mb-4">Consultá por esta propiedad</h3>
+                        <p className="text-gray-600 leading-relaxed text-[15px] sm:text-lg">
+                            Comunicate al{' '}
+                            <a
+                                href={`tel:${contacto.telefono.replace(/\s/g, '')}`}
+                                className="font-bold text-red-600 hover:underline"
+                            >
+                                {contacto.telefono}
+                            </a>
+                            {contacto.horario ? `, ${contacto.horario}` : ''}.
+                        </p>
+                        {contacto.email && (
+                            <p className="text-gray-600 leading-relaxed text-[15px] sm:text-lg mt-1">
+                                O escribinos a{' '}
+                                <a
+                                    href={`mailto:${contacto.email}`}
+                                    className="font-bold text-red-600 hover:underline"
+                                >
+                                    {contacto.email}
+                                </a>
+                                .
+                            </p>
+                        )}
+                        <p className="text-sm text-gray-400 mt-3">
+                            {lineaDeMatricula(contacto)}
+                        </p>
                     </div>
 
                     {/* Fase 6.6: los requisitos salen de su propia columna.

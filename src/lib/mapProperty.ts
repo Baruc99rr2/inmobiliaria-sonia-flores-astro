@@ -206,12 +206,22 @@ export function estaDisponible(producto: { detalles?: { estado?: string } }): bo
   return (producto?.detalles?.estado ?? 'disponible') === 'disponible';
 }
 
-/** "Alquilada" / "Vendida", o `null` si está disponible. */
+/**
+ * La etiqueta que ve EL PÚBLICO. `null` si está disponible.
+ *
+ * >>> Dice "No disponible" y nunca "Alquilada" ni "Vendida". <<<
+ *
+ * Al cliente no le cambia nada saber cuál de las dos fue: la propiedad no está
+ * y listo. A un competidor sí le sirve: contando alquiladas contra vendidas
+ * saca cuánto se mueve el negocio y de qué lado. Es información de la
+ * inmobiliaria, no del inmueble.
+ *
+ * En el PANEL sí se distingue —el toggle dice "Ya se alquiló" / "Ya se vendió"—
+ * porque la dueña necesita saber qué está marcando. La distinción existe en la
+ * columna `estado`; lo que no sale es a la vista pública.
+ */
 export function etiquetaEstado(producto: { detalles?: { estado?: string } }): string | null {
-  const e = producto?.detalles?.estado ?? 'disponible';
-  if (e === 'alquilada') return 'Alquilada';
-  if (e === 'vendida') return 'Vendida';
-  return null;
+  return estaDisponible(producto) ? null : 'No disponible';
 }
 
 /**
