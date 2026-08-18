@@ -38,7 +38,7 @@ export async function obtenerMensajes(
   let q = supabase
     .from('contact_messages')
     .select(
-      'id, nombre, email, telefono, ciudad, asunto, mensaje, leido, created_at, property_legacy_id, properties ( name )'
+      'id, nombre, email, telefono, ciudad, asunto, mensaje, leido, created_at, property_legacy_id, properties ( name, legacy_id )'
     )
     .order('created_at', { ascending: false })
     .limit(200);
@@ -63,7 +63,12 @@ export async function obtenerMensajes(
       mensaje: m.mensaje ?? '',
       leido: m.leido === true,
       created_at: m.created_at,
-      property_legacy_id: m.property_legacy_id ?? null,
+      // El número VIVO de la propiedad gana sobre la copia guardada en el
+      // mensaje. Los mensajes que llegaron antes de que existiera la
+      // numeración automática guardaron `null` ahí, y con esa copia el enlace
+      // salía `/propiedades/null`. La copia sigue sirviendo de respaldo para
+      // cuando la propiedad ya se borró y la relación devuelve nada.
+      property_legacy_id: m.properties?.legacy_id ?? m.property_legacy_id ?? null,
       propiedadNombre: m.properties?.name ?? null,
     })),
   };
