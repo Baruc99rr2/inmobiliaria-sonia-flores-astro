@@ -7,6 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { formatTriEstado, formatMedida, formatUbicacion, etiquetaZona } from '../lib/format';
 import { estaDisponible } from '../lib/mapProperty';
+import { esVideo, kindDe, SIN_FOTO } from '../lib/media';
 import {
     CONFIGURACION_POR_DEFECTO,
     lineaDeContacto,
@@ -49,7 +50,11 @@ const ProductDetailsReact = ({ product, currentUrl, configuracion }) => {
         product.detalles?.lon || -65.300
     ];
 
-    const imagesList = product.images || [product.image];
+    // `product.image` (singular) no existe en ningún dato: era un resto del
+    // ecommerce. Sin propiedades cargadas quedaba `[undefined]` y el carrusel
+    // renderizaba un `<img src="undefined">`. Con el uploader va a poder haber
+    // propiedades recién creadas sin nada todavía, así que cae al placeholder.
+    const imagesList = product.images?.length ? product.images : [SIN_FOTO];
 
     const prevImage = (e) => { e?.stopPropagation(); setCurrentImgIndex(prev => prev === 0 ? imagesList.length - 1 : prev - 1); };
     const nextImage = (e) => { e?.stopPropagation(); setCurrentImgIndex(prev => prev === imagesList.length - 1 ? 0 : prev + 1); };
@@ -123,7 +128,7 @@ const ProductDetailsReact = ({ product, currentUrl, configuracion }) => {
             <div className='w-full relative bg-black h-[40vh] md:h-[65vh] cursor-pointer overflow-hidden' onClick={() => setIsFullscreen(true)}>
                 <div className="flex w-full h-full transition-transform duration-500 ease-out" style={{ transform: `translateX(-${currentImgIndex * 100}%)` }}>
                     {imagesList.map((file, index) => {
-                        const isVideo = file.toLowerCase().endsWith('.mp4') || file.toLowerCase().endsWith('.mov') || file.toLowerCase().endsWith('.webm');
+                        const isVideo = esVideo(file, kindDe(product, index));
 
                         return (
                             <div key={index} className="min-w-full h-full bg-zinc-950 relative flex items-center justify-center overflow-hidden p-4 md:p-6">
@@ -350,7 +355,7 @@ const ProductDetailsReact = ({ product, currentUrl, configuracion }) => {
                     <div className="w-full h-full flex items-center justify-center p-6 md:p-10" onClick={(e) => e.stopPropagation()}>
                         <div className="flex w-full h-full transition-transform duration-500 ease-out" style={{ transform: `translateX(-${currentImgIndex * 100}%)` }}>
                             {imagesList.map((file, index) => {
-                                const isVideo = file.toLowerCase().endsWith('.mp4') || file.toLowerCase().endsWith('.mov') || file.toLowerCase().endsWith('.webm');
+                                const isVideo = esVideo(file, kindDe(product, index));
 
                                 return (
                                     <div key={index} className="min-w-full h-full flex items-center justify-center p-2">
