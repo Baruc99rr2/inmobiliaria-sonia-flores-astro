@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ImageIcon, VideoIcon, AlertTriangleIcon, HardDriveIcon } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/admin/ui/alert';
 import { Skeleton } from '@/components/admin/ui/skeleton';
+import SubidorMedia from '@/components/admin/SubidorMedia';
 import {
   formatearBytes,
   obtenerMedia,
@@ -13,14 +14,13 @@ import {
 } from '@/lib/admin/media';
 
 /**
- * Las fotos y videos de la propiedad (Fase 7b).
+ * Las fotos y videos de la propiedad (Fases 7b y 7c).
  *
- * >>> Por ahora SOLO MUESTRA. <<<
+ * Muestra lo cargado y permite subir. Reordenar y borrar llegan en la 7d.
  *
- * Subir llega en la 7c y reordenar/borrar en la 7d. Se separa así a propósito:
- * poder ver qué tiene cargado ya es útil por sí solo —hoy la dueña no tiene
- * forma de saberlo sin abrir la web—, y deja el terreno probado antes de meter
- * la parte que escribe.
+ * En el ALTA no aparece el subidor: no hay `propiedadId` todavía, y sin él no
+ * hay dónde guardar el archivo ni a qué fila asociarlo. Se avisa con todas las
+ * letras en vez de mostrar un cargador que va a fallar.
  *
  * La primera posición se marca como "Portada" porque es la que sale en el
  * listado y en la home. Tiene que ser una imagen: tres componentes del sitio
@@ -33,6 +33,14 @@ export default function GaleriaMedia({ propiedadId }: { propiedadId?: string }) 
   const [error, setError] = useState<string | null>(null);
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [uso, setUso] = useState<UsoStorage | null>(null);
+
+  const recargar = useCallback(async () => {
+    const u = await obtenerUsoStorage();
+    setUso(u);
+    if (!propiedadId) return;
+    const r = await obtenerMedia(propiedadId);
+    if (r.ok) setMedia(r.media);
+  }, [propiedadId]);
 
   useEffect(() => {
     let vigente = true;
@@ -71,6 +79,8 @@ export default function GaleriaMedia({ propiedadId }: { propiedadId?: string }) 
       </div>
 
       {uso && <MedidorDeEspacio uso={uso} />}
+
+      {propiedadId && <SubidorMedia propiedadId={propiedadId} alTerminar={recargar} />}
 
       {!propiedadId ? null : cargando ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -143,8 +153,8 @@ export default function GaleriaMedia({ propiedadId }: { propiedadId?: string }) 
           </ul>
 
           <p className="text-xs text-muted-foreground">
-            {media.length} {media.length === 1 ? 'elemento' : 'elementos'}. Cargar, reordenar
-            y borrar llega en la próxima entrega.
+            {media.length} {media.length === 1 ? 'elemento' : 'elementos'}. Reordenar y borrar
+            llega en la próxima entrega.
           </p>
         </>
       )}
