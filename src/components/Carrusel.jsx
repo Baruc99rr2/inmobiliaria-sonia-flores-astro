@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { estaDisponible } from "../lib/mapProperty";
+import { portadaDe } from "../lib/media";
 // Importación directa de los datos sin depender de ShopContext
 import { productsData } from "../data";
 import { MdLocationOn } from 'react-icons/md';
@@ -62,7 +63,9 @@ const ScrollReveal = ({ children, delay = "delay-0" }) => {
 
 // TARJETA DE PROPIEDAD ESTILO BANNER 3D
 const ProductCard = ({ product, dimensions, index, totalItems }) => {
-  const displayImage = product.images && product.images.length > 0 ? product.images[0] : '/propiedades/unisex.jpg';
+  // `portadaDe` saltea los videos y cae a un placeholder que SI existe:
+  // '/propiedades/unisex.jpg' nunca estuvo en el repo.
+  const displayImage = portadaDe(product);
 
   const anglePerItem = 360 / totalItems;
   const currentAngle = anglePerItem * index;

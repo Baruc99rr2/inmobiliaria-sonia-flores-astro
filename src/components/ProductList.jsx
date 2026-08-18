@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { estaDisponible } from "../lib/mapProperty";
+import { portadaDe } from "../lib/media";
 // Importamos los datos directamente sin usar Context
 import { productsData } from "../data"; 
 import { MdLocationOn, MdOutlineBathtub } from 'react-icons/md';
@@ -43,7 +44,9 @@ const ScrollReveal = ({ children, delay = "delay-0" }) => {
 
 // TARJETA DE PROPIEDAD
 const ProductCard = ({ product }) => {
-  const displayImage = product.images?.[0] || '/propiedades/casa-bajolavina-venta.png';
+  // Antes caia a la foto de OTRA propiedad ('casa-bajolavina-venta.png'), que
+  // es peor que un placeholder: mostraba una casa que no era esa.
+  const displayImage = portadaDe(product);
   
   // Validación de precio para evitar NaN
   const hasValidPrice = product.price !== undefined && product.price !== null && !isNaN(product.price) && product.price !== '';

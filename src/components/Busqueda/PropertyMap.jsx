@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useCallback } from "react";
+import { portadaDe } from "../../lib/media";
 
 const PropertyMap = ({ 
   filteredProducts = [], 
@@ -98,7 +99,7 @@ const PropertyMap = ({
       popupContent.className = "flex flex-col gap-2 w-[190px] cursor-pointer font-sans";
       popupContent.innerHTML = `
         <div class="w-full h-[110px] overflow-hidden rounded bg-gray-100">
-          <img src="${prop?.images?.[0] || '/propiedades/unisex.jpg'}" class="w-full h-full object-cover" />
+          <img src="${portadaDe(prop)}" class="w-full h-full object-cover" />
         </div>
         <h5 class="m-0 font-bold text-sm text-gray-800 line-clamp-2">${prop?.name || 'Propiedad'}</h5>
         <p class="m-0 text-red-600 font-extrabold">${textoPrecio}</p>

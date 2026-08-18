@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import MarcaEstado from "../MarcaEstado";
+import { soloImagenes } from "../../lib/media";
 import { MdLocationOn, MdBed, MdBathtub, MdSquareFoot, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { chipTriEstado, chipMedida, etiquetaZona } from '../../lib/format';
 
@@ -9,20 +10,12 @@ const PropertySearchCard = ({
   onHover, 
   onLeave 
 }) => {
-  // 1. FILTRAMOS EL ARRAY PARA QUEDARNOS SOLO CON IMÁGENES (IGNORANDO VIDEOS .mp4, .mov, .webm)
-  const allFiles = product?.images && product.images.length > 0 ? product.images : ['/propiedades/unisex.jpg'];
-  
-  const images = allFiles.filter(file => {
-    const isVideo = file.toLowerCase().endsWith('.mp4') || 
-                    file.toLowerCase().endsWith('.mov') || 
-                    file.toLowerCase().endsWith('.webm');
-    return !isVideo;
-  });
-
-  // Si por alguna razón la propiedad solo tenía videos, le dejamos la imagen por defecto
-  if (images.length === 0) {
-    images.push('/propiedades/unisex.jpg');
-  }
+  // Solo imágenes: esta tarjeta pasa fotos con flechitas y un video acá no va.
+  //
+  // Antes filtraba por extensión y caía a '/propiedades/unisex.jpg', que NO
+  // EXISTE en el repo. `soloImagenes` usa el `kind` de la base —que no se rompe
+  // si la URL trae querystring— y cae a un placeholder real.
+  const images = soloImagenes(product);
 
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
 

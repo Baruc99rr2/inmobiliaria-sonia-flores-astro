@@ -110,13 +110,25 @@ function categoriaLegacy(operation: string | null | undefined): string {
 }
 
 export function mapDbToProduct(row: any) {
-  // Media: array plano de strings ordenado por sort_order, imágenes y videos
-  // mezclados. Tres componentes hacen images[0] sin filtrar videos, así que el
-  // orden importa y el primer elemento tiene que ser imagen. Eso lo garantizan
-  // la convención de la tabla y el validador de la Fase 7.
-  const images = [...(row.property_media ?? [])]
-    .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-    .map((m: any) => m.url);
+  // Media ordenado por sort_order, imágenes y videos mezclados.
+  //
+  // `images` sigue siendo un array plano de strings porque así lo consumen los
+  // componentes existentes y no se los reescribe (regla 2 del plan). Pero
+  // ADEMÁS se expone `detalles.media` con el `kind` de cada uno, en el mismo
+  // orden y con los mismos índices.
+  //
+  // Sin eso, la única forma de saber si algo es video era mirarle la extensión
+  // a la URL, y las URLs de Supabase Storage pueden traer querystring: ahí
+  // `endsWith('.mp4')` da false y se renderiza un `<img>` apuntando a un video.
+  // Ver `src/lib/media.ts`.
+  const mediaOrdenado = [...(row.property_media ?? [])].sort(
+    (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0)
+  );
+  const images = mediaOrdenado.map((m: any) => m.url);
+  const media = mediaOrdenado.map((m: any) => ({
+    url: m.url,
+    kind: m.kind === 'video' ? 'video' : 'image',
+  }));
 
   // Servicios: labels ordenados por el sort_order del catálogo.
   // Si la propiedad no tiene ninguno queda [], y el componente esconde la
@@ -188,6 +200,10 @@ export function mapDbToProduct(row: any) {
       // que es el default de la base.
       estado: estadoValido(row.estado),
       requisitos: (row.requisitos ?? '').trim(),
+
+      // --- Fase 7a ---
+      // Mismo orden e índices que `images`, con el tipo real de cada elemento.
+      media,
     },
   };
 }
