@@ -2,18 +2,15 @@ import React, { useState } from 'react'
 import { BsInstagram } from 'react-icons/bs'
 import { FaFacebook, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope } from 'react-icons/fa'
 import SoniaLogo from '../assets/SoniaLogo.png'; 
+import { enviarConsulta, propiedadDeLaUrl } from '../lib/contacto';
 
 // Extraemos la URL en string (.src) del objeto que genera Astro
 const logoUrl = SoniaLogo?.src || SoniaLogo;
 
-// Solución puente (Fase 0.6). Se retira entera en la Fase 8.5, cuando el formulario
-// pase a escribir en la tabla contact_messages de Supabase.
-//
-// La access key de Web3Forms es pública por diseño: ellos documentan que "no es una
-// API key secreta" y que va dentro del <form>. Por eso lleva prefijo PUBLIC_.
-// El DESTINATARIO no se configura acá: está atado a la key, y se cambia desde el
-// panel de Web3Forms (hoy va a baruc276@gmail.com).
-const WEB3FORMS_ACCESS_KEY = import.meta.env.PUBLIC_WEB3FORMS_ACCESS_KEY;
+// FASE 8.5: se retiró Web3Forms. El mensaje va a `contact_messages` en Supabase
+// y la dueña lo lee desde el panel. La variable PUBLIC_WEB3FORMS_ACCESS_KEY
+// sigue en el .env a propósito, marcada como sin uso, por si hay que volver
+// atrás rápido. Ver `src/lib/contacto.ts`.
 
 const ESTADO_INICIAL = {
   nombre: '', email: '', telefono: '', ciudad: '', asunto: '', mensaje: ''
@@ -35,56 +32,36 @@ const Footer = () => {
     if (enviando) return;
 
     // Honeypot: si viene con contenido, es un bot. Cortamos sin avisarle nada.
-    // Web3Forms además valida "botcheck" de su lado.
+    // Sigue teniendo sentido en el cliente —su gracia es que el bot complete un
+    // campo que un humano no ve—, pero el LÍMITE DE ENVÍOS ya no está acá: lo
+    // hace un trigger en la base, porque un tope en JavaScript se saltea
+    // abriendo la consola. Ver `scripts/fase85-contacto.sql`.
     if (e.target.botcheck?.checked) return;
-
-    if (!WEB3FORMS_ACCESS_KEY) {
-      setResultado({
-        ok: false,
-        texto: 'El formulario no está configurado. Escribinos por teléfono o por WhatsApp al 388 54881245.'
-      });
-      return;
-    }
 
     setEnviando(true);
     setResultado(null);
 
-    try {
-      const respuesta = await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          access_key: WEB3FORMS_ACCESS_KEY,
-          subject: `Consulta web: ${formData.asunto || 'sin asunto'} — ${formData.nombre}`,
-          from_name: 'Web Inmobiliaria Sonia Flores',
-          ...formData
-        })
-      });
+    // Si la consulta salió desde una ficha, queda atada a esa propiedad. Se
+    // saca de la URL porque este formulario vive en el layout y no sabe qué
+    // página lo contiene.
+    const propiedadLegacyId =
+      typeof window !== 'undefined' ? propiedadDeLaUrl(window.location.pathname) : null;
 
-      const datos = await respuesta.json().catch(() => ({}));
+    const r = await enviarConsulta({ ...formData, propiedadLegacyId });
 
-      // Web3Forms devuelve { success: false } con HTTP 200 en algunos errores,
-      // así que no alcanza con mirar respuesta.ok.
-      if (!respuesta.ok || !datos.success) {
-        throw new Error(datos.message || `El servidor respondió ${respuesta.status}`);
-      }
-
+    if (r.ok) {
       setResultado({
         ok: true,
         texto: `¡Gracias ${formData.nombre}! Recibimos tu consulta y te vamos a responder a la brevedad.`
       });
       setFormData(ESTADO_INICIAL);
-    } catch (error) {
-      // No limpiamos el formulario: lo que escribió el usuario tiene que seguir ahí
-      // para que pueda reintentar sin volver a tipear todo.
-      setResultado({
-        ok: false,
-        texto: 'No pudimos enviar tu consulta. Revisá tu conexión y probá de nuevo, o escribinos al 388 54881245.'
-      });
-      console.error('Web3Forms:', error);
-    } finally {
-      setEnviando(false);
+    } else {
+      // No limpiamos el formulario: lo que escribió tiene que seguir ahí para
+      // que pueda reintentar sin volver a tipear todo.
+      setResultado({ ok: false, texto: r.error });
     }
+
+    setEnviando(false);
   };
 
   return (
