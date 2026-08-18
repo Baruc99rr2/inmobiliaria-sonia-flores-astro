@@ -8,6 +8,7 @@ import CamposNumericos, { type ValoresNumericos } from '@/components/admin/Campo
 import CamposTags from '@/components/admin/CamposTags';
 import CamposDireccion from '@/components/admin/CamposDireccion';
 import CampoMapa from '@/components/admin/CampoMapa';
+import GaleriaMedia from '@/components/admin/GaleriaMedia';
 import { Checkbox } from '@/components/admin/ui/checkbox';
 import {
   contableDesdeDb,
@@ -487,6 +488,9 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
           setGuardado(false);
         }}
       />
+
+      {/* --- Fotos y video (7b) --- */}
+      <GaleriaMedia propiedadId={id} />
 
       {/* --- Mapa (6e) --- */}
       <CampoMapa
