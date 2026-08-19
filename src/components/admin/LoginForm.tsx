@@ -147,6 +147,16 @@ export default function LoginForm() {
             </p>
           </form>
         )}
+        {/* Sin esto, quien cierra sesión queda encerrado en el login: la única
+            salida era volver a entrar. */}
+        <p className="mt-6 text-center">
+          <a
+            href="/"
+            className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+          >
+            Volver al sitio
+          </a>
+        </p>
       </CardContent>
     </Card>
   );

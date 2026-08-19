@@ -1,0 +1,10 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import PanelMensajes from '../../components/admin/PanelMensajes.tsx';
+
+export const prerender = false;
+---
+
+<AdminLayout title="Mensajes — Panel Sonia Flores">
+  <PanelMensajes client:only="react" />
+</AdminLayout>
