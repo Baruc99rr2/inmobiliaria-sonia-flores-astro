@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { BiChevronLeft, BiChevronRight, BiBed, BiArea, BiHomeAlt, BiCar, BiWater, BiBlanket, BiBuildingHouse, BiWifi, BiShareAlt, BiLogoWhatsapp, BiLogoFacebook, BiLogoInstagram } from 'react-icons/bi';
 import { IoMdClose } from 'react-icons/io';
 import { MdOutlineBathtub, MdLocationOn, MdOutlineLocalDrink, MdOutlineElectricBolt, MdOutlineGasMeter, MdFullscreen, MdInfoOutline } from 'react-icons/md';

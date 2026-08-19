@@ -1,6 +1,5 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import AppWrapper from '../components/AppWrapper.jsx';
 import Homepage from '../components/Homepage.jsx';
 import LoadingScreen from '../components/LoadingScreen.jsx';
 import {
@@ -42,8 +41,6 @@ const description = "Encontrá tu próximo hogar en San Salvador de Jujuy. Alqui
   description={description}
   image={absoluteLogoUrl}
 >
-  <AppWrapper client:load>
-    <LoadingScreen client:load />
-    <Homepage client:load products={products} />
-  </AppWrapper>
+  <LoadingScreen client:load />
+  <Homepage client:load products={products} />
 </Layout>

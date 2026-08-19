@@ -23,3 +23,6 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 .vercel
+
+# Respaldos de la base: datos reales, no van al repositorio.
+respaldos/

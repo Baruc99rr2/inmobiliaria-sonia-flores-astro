@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MdBusiness } from 'react-icons/md';
 import fondoNos from "../assets/fondoNos.jpg"; 
 import SoniaLogo from "../assets/SoniaLogo.png"; 

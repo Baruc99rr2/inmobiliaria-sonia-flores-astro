@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { BsInstagram } from 'react-icons/bs'
 import { FaFacebook, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope, FaLock } from 'react-icons/fa'
 import SoniaLogo from '../assets/SoniaLogo.png'; 

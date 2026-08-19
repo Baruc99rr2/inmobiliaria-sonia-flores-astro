@@ -1,4 +1,3 @@
-import React from "react";
 import { MdViewList, MdViewModule } from 'react-icons/md';
 
 const SearchResultsHeader = ({

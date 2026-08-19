@@ -1,10 +1,9 @@
-import React, { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { portadaDe } from "../../lib/media";
 
 const PropertyMap = ({ 
   filteredProducts = [], 
   activePropId, 
-  setActivePropId, 
   navigate 
 }) => {
   const mapRef = useRef(null);

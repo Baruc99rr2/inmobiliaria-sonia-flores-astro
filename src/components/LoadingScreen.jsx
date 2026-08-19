@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const LoadingScreen = ({ onFinish = undefined }) => {
   const [isLoading, setIsLoading] = useState(true);

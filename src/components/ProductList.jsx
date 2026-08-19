@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { estaDisponible } from "../lib/mapProperty";
 import { portadaDe } from "../lib/media";
 // Importamos los datos directamente sin usar Context

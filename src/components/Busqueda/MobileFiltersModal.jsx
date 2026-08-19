@@ -1,4 +1,3 @@
-import React from "react";
 import { MdSearch, MdClose, MdTune } from 'react-icons/md';
 
 const MobileFiltersModal = ({

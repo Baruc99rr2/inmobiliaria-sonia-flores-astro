@@ -93,7 +93,6 @@ const { count: cuantos } = await svc
 chequear('entraron exactamente 5', cuantos === 5, `${cuantos} filas`);
 
 console.log('\n=== EL VISITANTE NO VE EL ERROR CRUDO ===');
-const fuente = readFileSync(new URL('../src/lib/contacto.ts', import.meta.url), 'utf8');
 const traducir = (m) => {
   if (/demasiados mensajes seguidos|check_violation/i.test(m))
     return 'Ya nos enviaste varias consultas seguidas. Esperá unos minutos y probá de nuevo, o llamanos por teléfono.';
