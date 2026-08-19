@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { BsInstagram } from 'react-icons/bs'
-import { FaFacebook, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope } from 'react-icons/fa'
+import { FaFacebook, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope, FaLock } from 'react-icons/fa'
 import SoniaLogo from '../assets/SoniaLogo.png'; 
 import { enviarConsulta, propiedadDeLaUrl } from '../lib/contacto';
 
@@ -247,6 +247,17 @@ const Footer = () => {
       {/* Copyright */}
       <div className='text-center pt-4'>
         <p className='text-gray-500 text-[11px]'>©SkyTech Jujuy 2026. Todos los derechos reservados.</p>
+
+        {/* Acceso al panel. No se esconde: quien no es la dueña se topa con el
+            login y no pasa de ahí, y esconderlo solo lograría que ella no lo
+            encuentre. Lo que protege es RLS, no que el enlace sea secreto. */}
+        <a
+          href="/admin"
+          className='inline-flex items-center gap-1.5 rounded-md bg-[#c9412e] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#b43a29]'
+        >
+          <FaLock className='text-[9px]' />
+          Ingresar a sección administración
+        </a>
       </div>
     </div>
   )
