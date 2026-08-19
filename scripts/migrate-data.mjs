@@ -8,11 +8,26 @@
  * Aplica el plan v5 §2.1 (regla barrio -> localidad) y §5.4 (conversiones
  * numéricas). El criterio de aceptación es la tabla de §5.5.
  *
+ * >>> LA ESCRITURA DESDE data.jsx ESTÁ DESACTIVADA (Fase 9). <<<
+ *
+ * Correr esto en modo escritura PISABA lo cargado desde el panel con el
+ * contenido congelado de `data.jsx`. Pasó dos veces: se perdieron los títulos
+ * editados, y otra vez el precio, el tipo y la localidad de una propiedad. El
+ * problema nunca fue que `data.jsx` existiera —sigue vivo como fallback de
+ * lectura—, sino que este script lo usara como fuente para ESCRIBIR.
+ *
+ * Ya no hay forma de correrlo "sin querer": intentarlo aborta con una
+ * explicación. Para restaurar de verdad se usa `--restaurar-desde-json`, que se
+ * alimenta del respaldo de `scripts/respaldo-base.mjs` —el estado REAL de la
+ * base— y no de `data.jsx`.
+ *
  * Uso:
- *   node scripts/migrate-data.mjs --dry-run   # no toca la base, imprime todo
- *   node scripts/migrate-data.mjs --check     # dry-run + tabla de aceptación §5.5
- *   node scripts/migrate-data.mjs             # migra de verdad
- *   node scripts/migrate-data.mjs --verify    # lee de la base y compara con §5.5
+ *   node scripts/migrate-data.mjs --verify     # SOLO LEE. Compara la base con §5.5
+ *   node scripts/migrate-data.mjs --dry-run    # SOLO LEE. Imprime lo que haría
+ *   node scripts/migrate-data.mjs --check      # SOLO LEE. dry-run + tabla §5.5
+ *   node scripts/migrate-data.mjs              # ABORTA. Ver el mensaje
+ *
+ *   node scripts/restaurar-desde-respaldo.mjs <carpeta>   # emergencia real
  *
  * Usa SUPABASE_SERVICE_ROLE_KEY (la secret key), que saltea RLS. Corre solo en
  * la máquina del dev: nunca se despliega.
@@ -340,11 +355,26 @@ function compararCon55(filas) {
   }
 
   lineas.push('');
+  // §5.5 es la foto del MOMENTO DE LA MIGRACION, no un contrato permanente.
+  // Desde que la duena edita desde el panel, la base diverge a proposito: si
+  // agrega servicios o corrige un precio, esta fila deja de "coincidir" y esta
+  // perfecto. Por eso las diferencias se informan y NO cuentan como error.
+  //
+  // Se comprobo con un caso real: la propiedad 1 aparecia como falla porque le
+  // cargaron 6 servicios desde el panel y §5.5 la tiene sin ninguno.
+  //
+  // Lo que si sigue siendo error son los chequeos estructurales de mas abajo
+  // (superficies, contables, expensas): esos describen INVARIANTES, no valores
+  // que ella pueda cambiar.
   lineas.push(
     fallos === 0
-      ? '✅ Las 18 filas coinciden con la tabla §5.5.'
-      : `❌ ${fallos} fila(s) NO coinciden con §5.5.`
+      ? '✅ Las filas migradas coinciden con la tabla §5.5.'
+      : `ℹ️  ${fallos} fila(s) difieren de §5.5. Es ESPERABLE si se editaron desde el panel:` +
+        ' §5.5 es la foto de la migración, no un contrato permanente. Mirá el detalle' +
+        ' arriba y confirmá que los cambios sean los que hizo la dueña.'
   );
+  // Las diferencias contra §5.5 no hacen fallar el comando.
+  fallos = 0;
 
   // Chequeos extra que la tabla menciona en prosa.
   lineas.push('');
@@ -537,7 +567,7 @@ async function verificarContraLaBase() {
   if (!url || !secret) throw new Error('Faltan las variables de entorno de Supabase.');
 
   const db = createClient(url, secret, { auth: { persistSession: false } });
-  const { data, error } = await db
+  let { data, error } = await db
     .from('properties')
     .select(
       `legacy_id, price, price_from, hide_location, superficie_m2, cocheras, dormitorios, banos, expensas,
@@ -546,6 +576,28 @@ async function verificarContraLaBase() {
     )
     .order('legacy_id');
   if (error) throw new Error(error.message);
+
+  // §5.5 describe SOLO las propiedades que vinieron de data.jsx. Las que carga
+  // la dueña desde el panel no estan ahi y no tienen por que cumplirla: la 21,
+  // por ejemplo, tiene expensas, y §2.3 dice "todas NULL" refiriendose a las
+  // originales.
+  //
+  // Sin este recorte, cada alta nueva hacia que --verify reportara una falla, y
+  // una comprobacion que grita en falso termina ignorandose. El limite se toma
+  // de data.jsx y no de un numero fijo, para que siga valiendo si alguna vez se
+  // agrega una fila a ese archivo.
+  const productsData = await leerDataJsx();
+  const idsDeDataJsx = new Set(productsData.map((p) => p.id));
+  const delPanel = data.filter((r) => !idsDeDataJsx.has(r.legacy_id));
+  data = data.filter((r) => idsDeDataJsx.has(r.legacy_id));
+
+  if (delPanel.length) {
+    console.log('');
+    console.log('  ' + delPanel.length + ' propiedad(es) cargadas desde el panel quedan fuera de §5.5: ' +
+      delPanel.map((r) => r.legacy_id).join(', '));
+    console.log('  §5.5 describe las que vinieron de data.jsx. Esto NO es un error.');
+    console.log('');
+  }
 
   const filas = data.map((r) => ({
     legacy_id: r.legacy_id,
@@ -576,6 +628,41 @@ async function verificarContraLaBase() {
 // main
 // ---------------------------------------------------------------------------
 async function main() {
+  // El portón. Va ANTES de todo lo demás, incluso antes de leer data.jsx: si
+  // alguien tipea el comando de memoria, tiene que chocar acá y no a mitad de
+  // camino con medio upsert hecho.
+  if (!VERIFY && !DRY_RUN) {
+    console.error(`
+╔══════════════════════════════════════════════════════════════════════════╗
+║  ESTE COMANDO YA NO ESCRIBE EN LA BASE                                   ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+Migrar desde src/data.jsx PISA lo que se cargó desde el panel. Ya pasó dos
+veces: se perdieron títulos editados, y en otra ocasión el precio, el tipo y la
+localidad de una propiedad.
+
+data.jsx es un snapshot CONGELADO de las 20 propiedades originales. Hoy sirve
+solo como fallback de lectura si Supabase se cae. No es la fuente de verdad: la
+fuente de verdad es la base.
+
+Qué hacer según lo que necesites:
+
+  Ver si la base coincide con la tabla §5.5
+      node --env-file=.env scripts/migrate-data.mjs --verify
+
+  Ver qué haría esta migración, sin tocar nada
+      node --env-file=.env scripts/migrate-data.mjs --dry-run
+
+  Cargar una propiedad nueva
+      Desde el panel: /admin/propiedades/nueva
+
+  RESTAURAR porque la base perdió datos de verdad
+      node --env-file=.env scripts/respaldo-base.mjs            (respaldo primero)
+      node --env-file=.env scripts/restaurar-desde-respaldo.mjs respaldos/<carpeta>
+`);
+    process.exit(1);
+  }
+
   if (VERIFY) {
     const fallos = await verificarContraLaBase();
     process.exit(fallos === 0 ? 0 : 1);

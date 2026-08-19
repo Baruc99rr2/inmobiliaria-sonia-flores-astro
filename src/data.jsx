@@ -1,3 +1,37 @@
+// ============================================================================
+// SNAPSHOT CONGELADO — NO SE EDITA A MANO NI SE VUELVE A MIGRAR
+// ============================================================================
+//
+// Esto NO es la fuente de verdad. La fuente de verdad es la base de datos.
+//
+// Qué es: la foto de las 20 propiedades tal como estaban el día que se cargaron
+// por primera vez en Supabase. Quedó vivo por UNA sola razón: si Supabase se
+// cae, los componentes públicos caen a este archivo y el sitio muestra algo en
+// vez de quedar en cero. Es un fallback de LECTURA y nada más.
+//
+// Lo que NO hay que hacer, y por qué:
+//
+//   NO editarlo para "corregir" una propiedad.
+//     Lo que se ve en la web sale de la base. Tocar acá no cambia nada en
+//     producción y deja las dos fuentes discrepando.
+//
+//   NO volver a correr la migración desde acá.
+//     Escribir la base desde este archivo PISA lo que cargó la dueña desde el
+//     panel. Pasó dos veces: se perdieron títulos editados, y en otra ocasión
+//     el precio, el tipo y la localidad de una propiedad. Por eso
+//     `scripts/migrate-data.mjs` ya no puede correrse en modo escritura: aborta
+//     con una explicación.
+//
+// Para cargar o corregir una propiedad: el panel, en /admin.
+// Para restaurar tras una pérdida real de datos:
+//   node --env-file=.env scripts/respaldo-base.mjs        (respaldo primero)
+//   node --env-file=.env scripts/restaurar-desde-respaldo.mjs respaldos/<carpeta>
+//
+// Este archivo no incluye ninguna propiedad cargada después de la migración
+// inicial. Si Supabase se cae, esas no van a aparecer: para ese caso está la
+// página de "estamos con problemas técnicos".
+// ============================================================================
+
 export const categoryItem = [
   { category_title: "Todos", image: "/propiedades/departamento-losperales-alquiler.png"},
   { category_title: "Venta", image: "/propiedades/departamento-centro-venta.png"},

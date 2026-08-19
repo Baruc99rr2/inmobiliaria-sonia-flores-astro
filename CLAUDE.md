@@ -87,6 +87,34 @@ no asumas sintaxis de memoria. En particular:
   sitio público.
 - Lo que protege los datos es RLS, no el guard del router.
 
+
+## MANTENIMIENTO RECURRENTE — respaldo de la base
+
+**El plan gratuito de Supabase NO tiene backups automáticos.** El único respaldo
+real es el que se hace a mano:
+
+```
+node --env-file=.env scripts/respaldo-base.mjs
+```
+
+Deja un JSON por tabla en `respaldos/AAAA-MM-DD-HHmm/` (ignorada por git: son
+datos de personas reales).
+
+**Cada cuánto:** después de cargar propiedades nuevas, y como piso una vez por
+mes. Cuanto más use la dueña el panel, más caro sale perder lo que no está
+respaldado. Conviene guardar una copia fuera de la máquina del dev.
+
+**Para restaurar tras una pérdida real:**
+
+```
+node --env-file=.env scripts/restaurar-desde-respaldo.mjs respaldos/<carpeta>            # en seco
+node --env-file=.env scripts/restaurar-desde-respaldo.mjs respaldos/<carpeta> --aplicar
+```
+
+**Nunca** se restaura desde `data.jsx`: es la foto congelada de las 20
+originales y pisa todo lo cargado desde el panel. `scripts/migrate-data.mjs` ya
+no puede correrse en modo escritura por ese motivo.
+
 ## Development
 
 When starting the dev server, use background mode:
