@@ -75,7 +75,7 @@ export const CLAVES_NUMERICAS = [
 
 export type PropiedadEdicion = DatosBasicos & {
   id: string;
-  legacy_id: number | null;
+  codigo: number | null;
   published: boolean;
 };
 
@@ -121,7 +121,7 @@ export async function obtenerPropiedad(id: string): Promise<
     // partir del texto del select, y una cadena armada en tiempo de ejecución le
     // hace perder la inferencia entera.
     .select(
-      'id, legacy_id, name, description, requisitos, operation, property_type_id, localidad_id, neighborhood_id, price, show_price, price_from, published, ambientes, dormitorios, banos, cocheras, expensas, superficie_m2, frente_m, fondo_m, calle, numero, show_exact_address, hide_location, adicionales, lat, lon'
+      'id, codigo, name, description, requisitos, operation, property_type_id, localidad_id, neighborhood_id, price, show_price, price_from, published, ambientes, dormitorios, banos, cocheras, expensas, superficie_m2, frente_m, fondo_m, calle, numero, show_exact_address, hide_location, adicionales, lat, lon'
     )
     .eq('id', id)
     .maybeSingle();
@@ -136,7 +136,7 @@ export async function obtenerPropiedad(id: string): Promise<
     ok: true,
     propiedad: {
       id: data.id,
-      legacy_id: data.legacy_id ?? null,
+      codigo: data.codigo ?? null,
       name: data.name ?? '',
       description: data.description ?? '',
       requisitos: data.requisitos ?? '',

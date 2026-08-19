@@ -35,7 +35,7 @@ export type DatosContacto = {
   asunto: string;
   mensaje: string;
   /** El id visible de la propiedad, si el formulario se mandó desde una ficha. */
-  propiedadLegacyId?: number | null;
+  propiedadCodigo?: number | null;
 };
 
 export type ResultadoEnvio =
@@ -89,14 +89,14 @@ export async function enviarConsulta(d: DatosContacto): Promise<ResultadoEnvio> 
   // "enviando" después de esperarla, y si acá saltara una excepción el botón
   // quedaría deshabilitado para siempre y el visitante sin forma de reintentar.
   try {
-    // La propiedad se resuelve por `legacy_id`. Si falla, el mensaje se manda
+    // La propiedad se resuelve por `codigo`. Si falla, el mensaje se manda
     // igual sin ella: perder el vínculo es molesto, perder la consulta es peor.
     let propertyId: string | null = null;
-    if (d.propiedadLegacyId) {
+    if (d.propiedadCodigo) {
       const { data } = await supabase
         .from('properties')
         .select('id')
-        .eq('legacy_id', d.propiedadLegacyId)
+        .eq('codigo', d.propiedadCodigo)
         .maybeSingle();
       propertyId = data?.id ?? null;
     }
@@ -109,7 +109,7 @@ export async function enviarConsulta(d: DatosContacto): Promise<ResultadoEnvio> 
       asunto: d.asunto.trim(),
       mensaje,
       property_id: propertyId,
-      property_legacy_id: d.propiedadLegacyId ?? null,
+      property_codigo: d.propiedadCodigo ?? null,
       leido: false,
     });
 

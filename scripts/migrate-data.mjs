@@ -3,7 +3,7 @@
  * Migración de src/data.jsx -> Supabase.
  *
  * Idempotente: se puede correr N veces y el resultado es el mismo. La clave es
- * `legacy_id`, que tiene UNIQUE en la tabla `properties`.
+ * `codigo`, que tiene UNIQUE en la tabla `properties`.
  *
  * Aplica el plan v5 §2.1 (regla barrio -> localidad) y §5.4 (conversiones
  * numéricas). El criterio de aceptación es la tabla de §5.5.
@@ -168,7 +168,7 @@ function construirFilas(productsData) {
     const priceFrom = /precios?\s+desde/i.test(p.description ?? '');
 
     return {
-      legacy_id: p.id,
+      codigo: p.id,
       slug,
       name: p.name ?? '',
       // Fase 6.6: el bloque de requisitos YA NO viene adentro de la descripción.
@@ -244,29 +244,29 @@ function validar(filas) {
   const problemas = [];
 
   for (const f of filas) {
-    if (!f.name) problemas.push(`id ${f.legacy_id}: sin título`);
-    if (!f.operation) problemas.push(`id ${f.legacy_id}: sin operación`);
-    if (!f.tipo_legacy_label) problemas.push(`id ${f.legacy_id}: sin tipo`);
+    if (!f.name) problemas.push(`id ${f.codigo}: sin título`);
+    if (!f.operation) problemas.push(`id ${f.codigo}: sin operación`);
+    if (!f.tipo_legacy_label) problemas.push(`id ${f.codigo}: sin tipo`);
 
     // La convención que asumen tres componentes del sitio.
     if (f._media.length > 0 && f._media[0].kind !== 'image') {
       problemas.push(
-        `id ${f.legacy_id}: el primer elemento de images es VIDEO (${f._media[0].url}). ` +
+        `id ${f.codigo}: el primer elemento de images es VIDEO (${f._media[0].url}). ` +
           'Tres componentes hacen images[0] sin filtrar y mostrarían una imagen rota.'
       );
     }
     if (f._media.length === 0) {
-      problemas.push(`id ${f.legacy_id}: sin imágenes`);
+      problemas.push(`id ${f.codigo}: sin imágenes`);
     }
 
     // El check medidas_sin_cero rechazaría estos.
     for (const campo of ['superficie_m2', 'frente_m', 'fondo_m']) {
       if (f[campo] !== null && !(f[campo] > 0)) {
-        problemas.push(`id ${f.legacy_id}: ${campo} = ${f[campo]} (debe ser NULL o > 0)`);
+        problemas.push(`id ${f.codigo}: ${campo} = ${f[campo]} (debe ser NULL o > 0)`);
       }
     }
     if (f.price !== null && !(f.price > 0)) {
-      problemas.push(`id ${f.legacy_id}: price = ${f.price} (debe ser NULL o > 0)`);
+      problemas.push(`id ${f.codigo}: price = ${f.price} (debe ser NULL o > 0)`);
     }
   }
 
@@ -322,7 +322,7 @@ function compararCon55(filas) {
   lineas.push('----+-----------+--------------+-----------------------+------------------+------------------------------------+----');
 
   for (const f of filas) {
-    const esperado = ESPERADO_55[f.legacy_id];
+    const esperado = ESPERADO_55[f.codigo];
     if (!esperado) continue;
 
     const tipoSlug = TIPO_SLUG_POR_LEGACY[f.tipo_legacy_label] ?? '???';
@@ -342,7 +342,7 @@ function compararCon55(filas) {
 
     lineas.push(
       [
-        String(f.legacy_id).padEnd(3),
+        String(f.codigo).padEnd(3),
         String(f.price ?? 'NULL').padEnd(9),
         tipoSlug.padEnd(12),
         String(f.localidad_slug).padEnd(21),
@@ -380,8 +380,8 @@ function compararCon55(filas) {
   lineas.push('');
   lineas.push('--- Superficies con valor (§5.5: solo ids 3, 5 y 11) ---');
   const conSuperficie = filas.filter((f) => f.superficie_m2 !== null);
-  for (const f of conSuperficie) lineas.push(`  id ${f.legacy_id}: ${f.superficie_m2}`);
-  const idsSup = conSuperficie.map((f) => f.legacy_id).filter((id) => id <= 18);
+  for (const f of conSuperficie) lineas.push(`  id ${f.codigo}: ${f.superficie_m2}`);
+  const idsSup = conSuperficie.map((f) => f.codigo).filter((id) => id <= 18);
   lineas.push(
     idsSup.join(',') === '3,5,11' ? '  ✅ coincide' : `  ❌ esperaba 3,5,11 y salió ${idsSup.join(',')}`
   );
@@ -389,7 +389,7 @@ function compararCon55(filas) {
   lineas.push('');
   lineas.push('--- Ceros conservados como "No tiene" ---');
   for (const campo of ['cocheras', 'dormitorios', 'banos']) {
-    const ids = filas.filter((f) => f[campo] === 0 && f.legacy_id <= 18).map((f) => f.legacy_id);
+    const ids = filas.filter((f) => f[campo] === 0 && f.codigo <= 18).map((f) => f.codigo);
     const esperados = {
       cocheras: '3,8,12,13,14,15,16,18',
       dormitorios: '4,8,13,14,18',
@@ -410,7 +410,7 @@ function compararCon55(filas) {
 
 /** La id 19 no está en §5.5: se verifica contra data.jsx directamente. */
 function reportar19(filas, productsData) {
-  const f = filas.find((x) => x.legacy_id === 19);
+  const f = filas.find((x) => x.codigo === 19);
   if (!f) return 'La id 19 no está en data.jsx.';
   const p = productsData.find((x) => x.id === 19);
   const d = p.detalles;
@@ -487,13 +487,13 @@ async function migrar(filas) {
   const faltantes = [];
   for (const f of filas) {
     if (!idTipoPorLegacy.has(f.tipo_legacy_label))
-      faltantes.push(`property_types.legacy_label = '${f.tipo_legacy_label}' (id ${f.legacy_id})`);
+      faltantes.push(`property_types.legacy_label = '${f.tipo_legacy_label}' (id ${f.codigo})`);
     if (!idLocalidad.has(f.localidad_slug))
-      faltantes.push(`localidades.slug = '${f.localidad_slug}' (id ${f.legacy_id})`);
+      faltantes.push(`localidades.slug = '${f.localidad_slug}' (id ${f.codigo})`);
     if (f.neighborhood_slug && !idBarrio.has(f.neighborhood_slug))
-      faltantes.push(`neighborhoods.slug = '${f.neighborhood_slug}' (id ${f.legacy_id})`);
+      faltantes.push(`neighborhoods.slug = '${f.neighborhood_slug}' (id ${f.codigo})`);
     for (const s of f._servicios) {
-      if (!idServicio.has(s)) faltantes.push(`services.slug = '${s}' (id ${f.legacy_id})`);
+      if (!idServicio.has(s)) faltantes.push(`services.slug = '${s}' (id ${f.codigo})`);
     }
   }
   if (faltantes.length) {
@@ -513,15 +513,15 @@ async function migrar(filas) {
 
   const { data: guardadas, error: errProps } = await db
     .from('properties')
-    .upsert(payload, { onConflict: 'legacy_id' })
-    .select('id, legacy_id');
+    .upsert(payload, { onConflict: 'codigo' })
+    .select('id, codigo');
   if (errProps) throw new Error(`Guardando properties: ${errProps.message}`);
 
-  const idPorLegacy = new Map(guardadas.map((p) => [p.legacy_id, p.id]));
+  const idPorCodigo = new Map(guardadas.map((p) => [p.codigo, p.id]));
   console.log(`  properties: ${guardadas.length} filas upserteadas`);
 
   // --- tablas hijas: se reemplazan enteras, así la corrida es idempotente ---
-  const ids = [...idPorLegacy.values()];
+  const ids = [...idPorCodigo.values()];
 
   const delMedia = await db.from('property_media').delete().in('property_id', ids);
   if (delMedia.error) throw new Error(`Borrando media: ${delMedia.error.message}`);
@@ -530,7 +530,7 @@ async function migrar(filas) {
 
   const mediaPayload = filas.flatMap((f) =>
     f._media.map((m) => ({
-      property_id: idPorLegacy.get(f.legacy_id),
+      property_id: idPorCodigo.get(f.codigo),
       url: m.url,
       storage_path: null, // legacy: vive en /public, no en el bucket. No borrar del bucket.
       kind: m.kind,
@@ -546,7 +546,7 @@ async function migrar(filas) {
 
   const servPayload = filas.flatMap((f) =>
     f._servicios.map((s) => ({
-      property_id: idPorLegacy.get(f.legacy_id),
+      property_id: idPorCodigo.get(f.codigo),
       service_id: idServicio.get(s),
     }))
   );
@@ -570,11 +570,11 @@ async function verificarContraLaBase() {
   let { data, error } = await db
     .from('properties')
     .select(
-      `legacy_id, price, price_from, hide_location, superficie_m2, cocheras, dormitorios, banos, expensas,
+      `codigo, price, price_from, hide_location, superficie_m2, cocheras, dormitorios, banos, expensas,
        property_types ( slug ), localidades ( slug ), neighborhoods ( slug ),
        property_services ( services ( slug ) ), property_media ( url, kind, sort_order )`
     )
-    .order('legacy_id');
+    .order('codigo');
   if (error) throw new Error(error.message);
 
   // §5.5 describe SOLO las propiedades que vinieron de data.jsx. Las que carga
@@ -588,19 +588,19 @@ async function verificarContraLaBase() {
   // agrega una fila a ese archivo.
   const productsData = await leerDataJsx();
   const idsDeDataJsx = new Set(productsData.map((p) => p.id));
-  const delPanel = data.filter((r) => !idsDeDataJsx.has(r.legacy_id));
-  data = data.filter((r) => idsDeDataJsx.has(r.legacy_id));
+  const delPanel = data.filter((r) => !idsDeDataJsx.has(r.codigo));
+  data = data.filter((r) => idsDeDataJsx.has(r.codigo));
 
   if (delPanel.length) {
     console.log('');
     console.log('  ' + delPanel.length + ' propiedad(es) cargadas desde el panel quedan fuera de §5.5: ' +
-      delPanel.map((r) => r.legacy_id).join(', '));
+      delPanel.map((r) => r.codigo).join(', '));
     console.log('  §5.5 describe las que vinieron de data.jsx. Esto NO es un error.');
     console.log('');
   }
 
   const filas = data.map((r) => ({
-    legacy_id: r.legacy_id,
+    codigo: r.codigo,
     price: r.price === null ? null : Number(r.price),
     price_from: r.price_from,
     hide_location: r.hide_location,

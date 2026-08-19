@@ -54,10 +54,10 @@ const Footer = () => {
     // Si la consulta salió desde una ficha, queda atada a esa propiedad. Se
     // saca de la URL porque este formulario vive en el layout y no sabe qué
     // página lo contiene.
-    const propiedadLegacyId =
+    const propiedadCodigo =
       typeof window !== 'undefined' ? propiedadDeLaUrl(window.location.pathname) : null;
 
-    const r = await enviarConsulta({ ...formData, propiedadLegacyId });
+    const r = await enviarConsulta({ ...formData, propiedadCodigo });
 
     if (r.ok) {
       setResultado({

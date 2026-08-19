@@ -19,7 +19,7 @@ export type EstadoPropiedad = 'disponible' | 'alquilada' | 'vendida';
 
 export type PropiedadListado = {
   id: string;
-  legacy_id: number | null;
+  codigo: number | null;
   slug: string;
   name: string;
   operation: 'alquiler' | 'venta';
@@ -37,7 +37,7 @@ export type PropiedadListado = {
 };
 
 const SELECT_LISTADO = `
-  id, legacy_id, slug, name, operation, price, show_price, published, estado,
+  id, codigo, slug, name, operation, price, show_price, published, estado,
   sort_order, updated_at, hide_location,
   property_types ( label ),
   localidades ( label ),
@@ -87,7 +87,7 @@ function mapear(row: any, conEstado: boolean): PropiedadListado {
   );
   return {
     id: row.id,
-    legacy_id: row.legacy_id ?? null,
+    codigo: row.codigo ?? null,
     slug: row.slug,
     name: row.name ?? '',
     operation: row.operation,
@@ -122,7 +122,7 @@ export async function listarPropiedades(): Promise<
 
   const { data, error } = await consulta
     .order('sort_order', { ascending: true })
-    .order('legacy_id', { ascending: true });
+    .order('codigo', { ascending: true });
 
   if (error) {
     console.error('[admin] listarPropiedades:', error.message);

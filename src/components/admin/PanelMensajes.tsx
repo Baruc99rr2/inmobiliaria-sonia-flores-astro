@@ -168,16 +168,16 @@ function Tarjeta({
       </div>
 
       {/* De qué propiedad preguntaba. Es lo primero que ella necesita saber. */}
-      {m.property_legacy_id && (
+      {m.property_codigo && (
         <a
-          href={`/propiedades/${m.property_legacy_id}`}
+          href={`/propiedades/${m.property_codigo}`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 rounded-lg bg-muted/60 p-2.5 text-xs hover:bg-muted"
         >
           <HouseIcon className="size-3.5 shrink-0" />
           <span className="min-w-0 flex-1 truncate">
-            Preguntó por: {m.propiedadNombre ?? `propiedad ${m.property_legacy_id}`}
+            Preguntó por: {m.propiedadNombre ?? `propiedad ${m.property_codigo}`}
           </span>
           <ExternalLinkIcon className="size-3.5 shrink-0" />
         </a>

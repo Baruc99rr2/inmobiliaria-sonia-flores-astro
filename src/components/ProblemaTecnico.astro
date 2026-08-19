@@ -1,0 +1,61 @@
+---
+/**
+ * "Estamos con problemas técnicos" (Fase 9).
+ *
+ * >>> ESTO NO ES UN 404, Y LA DIFERENCIA IMPORTA. <<<
+ *
+ * Un 404 le dice al buscador "esta página ya no existe, sacala del índice". Es
+ * lo correcto cuando el enlace está mal escrito o la propiedad se borró.
+ *
+ * Pero cuando la base no responde, NO sabemos si la propiedad existe. Contestar
+ * 404 ahí sería afirmar algo que no nos consta, y peor: si Supabase estuviera
+ * caído un par de horas, Google podría desindexar fichas que están perfectas.
+ * Recuperar posicionamiento cuesta semanas; el problema real dura minutos.
+ *
+ * Por eso quien usa este bloque responde **503 Service Unavailable** con
+ * `Retry-After`. Es la respuesta que la documentación de Google recomienda para
+ * indisponibilidad temporal: el buscador la entiende como "volvé más tarde" y
+ * NO toca el índice.
+ *
+ * El caso concreto que lo hizo necesario: una propiedad cargada desde el panel
+ * después de que se congeló `data.jsx`. Si Supabase se cae, el fallback no la
+ * tiene, y hasta ahora eso devolvía 404.
+ */
+---
+
+<section class="min-h-[70vh] flex items-center justify-center px-6 py-24 bg-gray-50">
+  <div class="max-w-xl w-full text-center">
+    <p class="text-5xl sm:text-6xl font-black text-[#c9412e] leading-none select-none">
+      Un momento
+    </p>
+
+    <h1 class="mt-6 text-2xl sm:text-3xl font-bold text-gray-900">
+      Estamos con problemas técnicos
+    </h1>
+
+    <p class="mt-4 text-gray-600 leading-relaxed">
+      No pudimos cargar esta propiedad en este momento. No es que no exista: es un
+      problema nuestro y estamos trabajando para resolverlo. Probá de nuevo en unos
+      minutos.
+    </p>
+
+    <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+      <a
+        href="/busqueda"
+        class="inline-flex items-center justify-center rounded-lg bg-gray-900 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#c9412e]"
+      >
+        Ver otras propiedades
+      </a>
+      <a
+        href="/#contact"
+        class="inline-flex items-center justify-center rounded-lg border border-gray-300 px-5 py-3 text-sm font-bold text-gray-800 transition-colors hover:bg-gray-100"
+      >
+        Escribinos
+      </a>
+    </div>
+
+    <p class="mt-8 text-sm text-gray-500">
+      Si necesitás una respuesta ahora, llamanos y te atendemos por teléfono.
+    </p>
+  </div>
+</section>

@@ -160,7 +160,7 @@ export default function ListadoPropiedades() {
       if (publicacion === 'si' && !p.published) return false;
       if (publicacion === 'no' && p.published) return false;
       if (!texto) return true;
-      const donde = [p.name, p.tipo, p.localidad, p.barrio, String(p.legacy_id ?? '')]
+      const donde = [p.name, p.tipo, p.localidad, p.barrio, String(p.codigo ?? '')]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
@@ -284,8 +284,8 @@ export default function ListadoPropiedades() {
                         {p.estado === 'alquilada' ? 'Ya se alquiló' : 'Ya se vendió'}
                       </Badge>
                     )}
-                    {p.legacy_id !== null && (
-                      <span className="text-xs text-muted-foreground">#{p.legacy_id}</span>
+                    {p.codigo !== null && (
+                      <span className="text-xs text-muted-foreground">#{p.codigo}</span>
                     )}
                   </div>
 
