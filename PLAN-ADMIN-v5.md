@@ -841,3 +841,74 @@ Tier gratuito: **1 GB**. Casi todas las propiedades tienen `.mp4`. Los videos ac
 - El **ítem 12** se revisa **después de la Fase 6**, no antes. Detalle para cuando llegue el momento: los tres privilegios sobrantes **no son explotables sin `SELECT` ni `INSERT`**, que `anon` no tiene sobre esas dos tablas. `REFERENCES` permitiría crear una FK contra ellas y `TRIGGER` adjuntar un trigger, pero las dos cosas requieren además ser dueño de otra tabla en el esquema, cosa que `anon` no es. **`TRUNCATE` es el único que molesta de verdad** y no debería estar: no lo frena RLS, porque RLS filtra filas y `TRUNCATE` opera sobre la tabla entera. Se saca con `revoke truncate on all tables in schema public from anon;` más el `alter default privileges` correspondiente. Se difiere para no tocar permisos con el panel a medio construir, donde un `revoke` de más se diagnostica mal.
 - Los ítems **2 a 6, 8, 9 y 10** se resuelven dentro de las Fases 3 y 3.5.
 - El **ítem 7** (el mail `baruc276@gmail.com` como contacto público de la inmobiliaria) sigue **fuera del plan y hay que decidirlo con la dueña**. Es el destinatario de las consultas de la Fase 0.6, así que conviene definirlo antes de que el formulario empiece a recibir tráfico real.
+
+---
+
+## PENDIENTE PARA LA PRÓXIMA SEMANA
+
+El proyecto queda cerrado con la web funcionando. Estas tres cosas quedaron
+fuera de alcance a propósito, no por olvido.
+
+### 1. Respaldo del bucket de Storage — el más importante
+
+**Los backups de Supabase Pro NO cubren el Storage.** Verificado contra su
+documentación: *"Database backups do not include objects you store via the
+Storage API, as the database only includes metadata about these objects"*. Así
+que hoy las fotos y videos que sube la dueña desde el panel **no los respalda
+nadie**. Si el bucket se pierde, `property_media` queda con filas apuntando a
+archivos inexistentes.
+
+**El plan acordado: espejo incremental a un repo privado de GitHub.**
+
+Funciona particularmente bien acá por una propiedad del uploader: genera rutas
+únicas y sube con `x-upsert: false`, así que **un archivo subido nunca cambia**.
+Git guarda cada blob una sola vez, y cada corrida agrega solo lo nuevo. Un video
+de 50 MB se copia una vez y no vuelve a ocupar espacio aunque el respaldo corra
+365 veces.
+
+Pasos:
+1. Crear un repo privado, p. ej. `inmobiliaria-respaldos`.
+2. Cargar ahí los secrets `PUBLIC_SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`.
+3. Script de espejo: leer un manifiesto, bajar solo las rutas nuevas, commitear.
+
+> **Decisión pendiente del dev:** ¿se guardan todos los archivos para siempre, o
+> solo los vigentes? Guardar todo hace el repo monótonamente creciente; guardar
+> solo los vigentes significa que si borra una foto por error y pasa un día, el
+> respaldo ya no la tiene. La recomendación es **guardar todo**: el volumen es
+> bajo y el costo de perder algo es alto.
+
+### 2. Automatizar `scripts/respaldo-base.mjs`
+
+Hoy es manual. La automatización va con **GitHub Actions y cron diario**, en el
+mismo repo de respaldos del punto 1.
+
+> **El workflow tiene que vivir en el repo de respaldos, NO en este.** GitHub
+> desactiva los workflows programados después de 60 días sin actividad en el
+> repositorio. Cuando terminen los commits de este proyecto, un cron acá se
+> apagaría solo y en silencio. En el repo de respaldos, el propio commit diario
+> es la actividad que lo mantiene vivo.
+
+Se descartó **Vercel Cron** por un motivo concreto: exige cargar
+`SUPABASE_SERVICE_ROLE_KEY` en Vercel, y el proyecto tiene la regla explícita de
+que esa clave nunca va ahí (ver `.env.example`). Hoy vive solo en la máquina del
+dev; ponerla en Vercel amplía el radio de exposición sin ganar nada, porque las
+funciones tampoco tienen almacenamiento persistente.
+
+### 3. El correo oficial de la inmobiliaria
+
+`site_settings.email` está **vacío a propósito**. Cuando la dueña confirme cuál
+es su correo de contacto, se carga desde el panel (Catálogos → Datos de
+contacto) y la ficha de cada propiedad empieza a mostrar "O escribinos a…".
+Vacío no muestra nada, así que no hay apuro técnico: es una decisión comercial.
+
+### Fuera de esta lista, sigue abierto
+
+- **Aviso por correo de mensajes nuevos** (§12): Web3Forms lo hacía y se perdió
+  al migrar. Hoy los mensajes esperan en el panel; si la dueña no entra, no se
+  entera. Se resuelve con un webhook de Supabase o un cron.
+- **Limpieza de `public/`** (§12, ítem 14): 81 de las 82 filas de
+  `property_media` todavía apuntan a archivos del repo. No es un borrado a
+  ciegas.
+- **Desajuste de hidratación en `Hero.jsx`**: usa `window.innerWidth` con
+  fallback 1200, así que en un teléfono se ve un salto al cargar. Viene del
+  commit inicial.
