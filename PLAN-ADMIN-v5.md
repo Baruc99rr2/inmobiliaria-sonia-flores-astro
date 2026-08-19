@@ -804,10 +804,25 @@ Tier gratuito: **1 GB**. Casi todas las propiedades tienen `.mp4`. Los videos ac
 
 | 13 | **Activar el "Inactivity timeout" del servidor de Supabase cuando el proyecto pase al plan Pro.** Hoy el cierre por inactividad es 100% del lado del cliente (Fase 6f). El ajuste del servidor es red de fondo, **no reemplazo**: para Supabase "actividad" es que se refresque el token, no que haya alguien usando el panel, y `supabase-js` refresca solo en segundo plano | Dashboard de Supabase → Auth → Sessions | 🟡 Baja — requiere plan Pro |
 
-| 12 | **`etiquetaZona()` detecta la ubicación reservada por dos vías**: `hide_location`, que expone el adaptador desde la Fase 3.5, y el centinela `'A consultar'` en `barrio` y `calle`, que es lo único que tiene el fallback de `data.jsx`. La segunda vía es deuda deliberada, no un descuido | `src/lib/format.js` (`formatUbicacion`, `etiquetaZona`) | 🟡 Baja — **se borra en la Fase 9** |
+| 14 | **`public/` sin limpiar.** Las fotos originales siguen versionadas en el repo. Las 21 propiedades actuales todavía las usan (81 de 82 filas de `property_media` son legacy), así que NO es un borrado a ciegas. Revisar cuando la mayoría del media esté en el bucket | `public/propiedades/` | 🟡 Baja — **pendiente, no descartado** |
 
-> **Detalle del ítem 12.** Mientras exista el fallback de `data.jsx`, el helper tiene que
-> seguir reconociendo el centinela: ese archivo no tiene `hide_location` ni ninguna otra
+| 12 | **`etiquetaZona()` detecta la ubicación reservada por dos vías**: `hide_location`, que expone el adaptador desde la Fase 3.5, y el centinela `'A consultar'` en `barrio` y `calle`, que es lo único que tiene el fallback de `data.jsx`. La segunda vía es deuda deliberada, no un descuido | `src/lib/format.js` (`formatUbicacion`, `etiquetaZona`) | 🟢 **YA NO ES DEUDA — ver abajo** |
+
+> **CERRADO EN LA FASE 9 — no se hace.** Este ítem decía "se borra en la Fase 9", pero su
+> premisa era que `data.jsx` desaparecía. El dev decidió conservarlo como fallback de
+> LECTURA (lo que se cortó fue la escritura desde ese archivo, en `migrate-data.mjs`).
+>
+> Comprobado antes de decidir: `data.jsx` tiene 2 propiedades —ids 12 y 19— con el
+> centinela `'A consultar'` en barrio y calle, y NINGUNA tiene `hide_location`. Si se
+> simplificara la detección, cuando el sitio cayera al fallback esas dos mostrarían
+> "A consultar" como barrio en vez de "Ubicación reservada".
+>
+> Lo mismo vale para la rama de fallback de `zonaDeProducto()` en `src/lib/zonas.js`.
+> **Las dos vías se quedan mientras `data.jsx` siga vivo.**
+>
+> **Detalle original del ítem 12.** Mientras exista el fallback de `data.jsx`, el helper
+> tiene que seguir reconociendo el centinela: ese archivo no tiene `hide_location` ni
+> ninguna otra
 > señal, y sin esa rama las ids 12 y 19 volverían a imprimir su dirección reservada si el
 > sitio cae al fallback. **Cuando `data.jsx` desaparezca en la Fase 9**, la detección por
 > centinela se puede borrar y `formatUbicacion` queda dependiendo solo de

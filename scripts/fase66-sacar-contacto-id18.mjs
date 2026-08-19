@@ -72,8 +72,8 @@ if (APLICAR && texto !== original) {
 const sb = createClient(process.env.PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const { data: filas, error } = await sb
   .from('properties')
-  .select('id, legacy_id, description')
-  .order('legacy_id');
+  .select('id, codigo, description')
+  .order('codigo');
 
 if (error) {
   console.log('\nERROR al leer la base:', error.message);
@@ -85,10 +85,10 @@ const aCambiar = filas
   .map((f) => ({ ...f, ...sacarContacto(f.description ?? '') }))
   .filter((f) => f.saco);
 
-chequear('filas con bloque de contacto', aCambiar.length === 1, `(${aCambiar.length}) -> ids ${aCambiar.map((f) => f.legacy_id).join(', ') || '—'}`);
+chequear('filas con bloque de contacto', aCambiar.length === 1, `(${aCambiar.length}) -> ids ${aCambiar.map((f) => f.codigo).join(', ') || '—'}`);
 
 for (const f of aCambiar) {
-  console.log(`\n  id ${f.legacy_id} queda:`);
+  console.log(`\n  id ${f.codigo} queda:`);
   console.log('   ', JSON.stringify('…' + f.descripcion.slice(-95)));
 }
 
@@ -98,9 +98,9 @@ if (APLICAR) {
       .from('properties')
       .update({ description: f.descripcion })
       .eq('id', f.id);
-    if (e) { console.log('   ERROR id', f.legacy_id, e.message); fallos++; }
+    if (e) { console.log('   ERROR id', f.codigo, e.message); fallos++; }
   }
-  const { data: rev } = await sb.from('properties').select('legacy_id, description');
+  const { data: rev } = await sb.from('properties').select('codigo, description');
   const quedan = rev.filter((p) => /📞|3884881245|Martillera/i.test(p.description ?? ''));
   console.log('\n  tras aplicar, filas con datos de contacto en la descripcion:', quedan.length);
   if (quedan.length) fallos++;

@@ -70,7 +70,7 @@ export async function getPublishedProducts() {
 }
 
 /**
- * Una propiedad por su `legacy_id` (el id que sigue viviendo en la URL).
+ * Una propiedad por su `codigo` (el id que sigue viviendo en la URL).
  *
  * Distingue a propósito dos casos que NO son lo mismo:
  *
@@ -83,7 +83,7 @@ export async function getPublishedProducts() {
  * Sin esta distinción, un corte de Supabase devolvería 404 en las 19 fichas y le
  * estaría diciendo al buscador que las propiedades dejaron de existir.
  */
-export async function getProductByLegacyId(legacyId: number) {
+export async function getProductPorCodigo(codigo: number) {
   // Sin credenciales: no es un 404, es una falla. Que caiga al fallback.
   if (!supabaseServer) return { ok: false, product: null };
 
@@ -91,12 +91,12 @@ export async function getProductByLegacyId(legacyId: number) {
     .from('properties')
     .select(PROPERTY_SELECT)
     .eq('published', true)
-    .eq('legacy_id', legacyId)
+    .eq('codigo', codigo)
     .maybeSingle();
 
   if (error) {
-    console.error('[properties] getProductByLegacyId:', error.message);
-    diagnosticarErrorDeConsulta('getProductByLegacyId', error.message);
+    console.error('[properties] getProductPorCodigo:', error.message);
+    diagnosticarErrorDeConsulta('getProductPorCodigo', error.message);
     return { ok: false, product: null };
   }
 

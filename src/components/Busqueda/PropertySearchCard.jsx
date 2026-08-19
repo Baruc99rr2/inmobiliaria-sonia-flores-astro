@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import MarcaEstado from "../MarcaEstado";
 import { soloImagenes } from "../../lib/media";
 import { MdLocationOn, MdBed, MdBathtub, MdSquareFoot, MdChevronLeft, MdChevronRight } from 'react-icons/md';

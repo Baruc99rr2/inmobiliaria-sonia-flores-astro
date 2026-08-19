@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { productsData } from "../../data";
 import { construirOpciones, zonaDeProducto, tipoDeProducto } from "../../lib/zonas";
 import { disponiblesPrimero } from "../../lib/mapProperty";
@@ -196,7 +196,6 @@ const Busqueda = ({ products: productsProp, catalogos }) => {
           <PropertyMap 
             filteredProducts={filteredProducts}
             activePropId={activePropId}
-            setActivePropId={setActivePropId}
             navigate={handleNavigate}
           />
         </div>

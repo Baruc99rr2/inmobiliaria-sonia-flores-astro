@@ -87,6 +87,51 @@ no asumas sintaxis de memoria. En particular:
   sitio público.
 - Lo que protege los datos es RLS, no el guard del router.
 
+
+## MANTENIMIENTO RECURRENTE — respaldo
+
+### Qué cubre cada cosa (verificado en la documentación de Supabase)
+
+| | Base de datos | Bucket de Storage (fotos y videos) |
+|---|---|---|
+| **Backups automáticos de Supabase Pro** | Sí, diarios, **retención 7 días** | **NO** |
+| `scripts/respaldo-base.mjs` | Sí, a JSON | No todavía |
+
+La documentación de Supabase lo dice con todas las letras: *"Database backups do not
+include objects you store via the Storage API, as the database only includes metadata
+about these objects."*
+
+O sea que **las fotos y videos que sube la dueña desde el panel no los respalda nadie.**
+Si el bucket se pierde, `property_media` va a tener las filas apuntando a archivos que
+ya no existen. Queda pendiente resolverlo.
+
+PITR (recuperación a un punto en el tiempo) es un adicional pago aparte del plan Pro, y
+al activarlo reemplaza a los backups diarios.
+
+### El respaldo manual
+
+```
+node --env-file=.env scripts/respaldo-base.mjs
+```
+
+Deja un JSON por tabla en `respaldos/AAAA-MM-DD-HHmm/` (ignorada por git: son datos de
+personas reales). Sigue siendo útil aunque estén los backups de Supabase: es un archivo
+que se puede abrir, leer y del que se puede reinsertar una fila puntual sin restaurar
+toda la base, y no vence a los 7 días.
+
+**Cada cuánto:** antes de cualquier cambio grande, y como piso una vez por mes.
+
+**Para restaurar tras una pérdida real:**
+
+```
+node --env-file=.env scripts/restaurar-desde-respaldo.mjs respaldos/<carpeta>            # en seco
+node --env-file=.env scripts/restaurar-desde-respaldo.mjs respaldos/<carpeta> --aplicar
+```
+
+**Nunca** se restaura desde `data.jsx`: es la foto congelada de las 20 originales y pisa
+todo lo cargado desde el panel. `scripts/migrate-data.mjs` ya no puede correrse en modo
+escritura por ese motivo.
+
 ## Development
 
 When starting the dev server, use background mode:

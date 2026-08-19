@@ -1,4 +1,3 @@
-import React from "react";
 import { MdSearch, MdTune, MdKeyboardArrowDown } from 'react-icons/md';
 
 const SearchFilters = ({

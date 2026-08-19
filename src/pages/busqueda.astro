@@ -1,6 +1,5 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import AppWrapper from '../components/AppWrapper.jsx';
 import Busqueda from '../components/Busqueda/Busqueda.jsx';
 import {
   getPublishedProducts,
@@ -37,7 +36,5 @@ const description = "Encontrá casas, departamentos, terrenos y locales comercia
 ---
 
 <Layout title={title} description={description}>
-  <AppWrapper client:load>
-    <Busqueda client:only="react" products={products} catalogos={catalogos} />
-  </AppWrapper>
+  <Busqueda client:only="react" products={products} catalogos={catalogos} />
 </Layout>

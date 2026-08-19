@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 export function BubbleBackground({ interactive = true, className = "", ...props }) {
   const canvasRef = useRef(null);

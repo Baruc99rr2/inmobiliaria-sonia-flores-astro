@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { HouseIcon, TagsIcon, CalendarDaysIcon, LogOutIcon, SunIcon, MoonIcon } from 'lucide-react';
+import { HouseIcon, TagsIcon, CalendarDaysIcon, MailIcon, ExternalLinkIcon, LogOutIcon, SunIcon, MoonIcon } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -35,12 +35,15 @@ import { temaActual, guardarTema, type Tema } from '@/lib/tema-panel';
  * en blanco: las secciones se van agregando a medida que se construyen.
  */
 
-type Seccion = 'propiedades' | 'agenda' | 'catalogos';
+type Seccion = 'propiedades' | 'mensajes' | 'agenda' | 'catalogos';
 
 const NAVEGACION: Array<{ id: Seccion; titulo: string; href: string; icono: ReactNode }> = [
   { id: 'propiedades', titulo: 'Propiedades', href: '/admin', icono: <HouseIcon /> },
   // "Agenda" y no "Calendario": es la palabra que ella ya usa para esto, y
   // describe para qué sirve en vez de con qué está hecho.
+  // Los mensajes van ARRIBA de Agenda: son lo que llega de afuera y tiene a
+  // alguien esperando respuesta.
+  { id: 'mensajes', titulo: 'Mensajes', href: '/admin/mensajes', icono: <MailIcon /> },
   { id: 'agenda', titulo: 'Agenda', href: '/admin/agenda', icono: <CalendarDaysIcon /> },
   { id: 'catalogos', titulo: 'Catálogos', href: '/admin/catalogos', icono: <TagsIcon /> },
 ];
@@ -175,6 +178,24 @@ export default function AdminShell({
         <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
           <SidebarTrigger className="-ml-1" />
           <h1 className="text-base font-semibold truncate">{titulo}</h1>
+
+          {/* Ver el sitio SIN cerrar sesión. Va en pestaña nueva para no perder
+              lo que esté editando.
+
+              `rel="noopener noreferrer"` no es ceremonia: sin `noopener`, la
+              pestaña que se abre recibe `window.opener` y puede navegar a la
+              que la abrió. Es nuestro propio sitio, pero la práctica correcta
+              no cuesta nada y evita tener que acordarse el día que el enlace
+              apunte a otro lado. */}
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition-colors hover:bg-muted"
+          >
+            <ExternalLinkIcon className="size-3.5" />
+            <span className="hidden sm:inline">Ver el sitio</span>
+          </a>
         </header>
 
         <div className="flex-1 p-4 md:p-6">{children}</div>

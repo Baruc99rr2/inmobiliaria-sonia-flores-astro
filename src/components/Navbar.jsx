@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BiMenu, BiX } from 'react-icons/bi';
 
 // IMPORTACIÓN DE LOS DOS LOGOS

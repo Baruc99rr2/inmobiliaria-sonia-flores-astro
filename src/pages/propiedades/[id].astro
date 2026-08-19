@@ -2,8 +2,9 @@
 import Layout from '../../layouts/Layout.astro';
 import ProductDetailsReact from '../../components/ProductDetailsReact.jsx';
 import PropiedadNoEncontrada from '../../components/PropiedadNoEncontrada.astro';
+import ProblemaTecnico from '../../components/ProblemaTecnico.astro';
 import {
-  getProductByLegacyId,
+  getProductPorCodigo,
   CACHE_CONTROL,
   HEADER_ORIGEN,
   ORIGEN_SUPABASE,
@@ -18,11 +19,11 @@ import { getConfiguracionSitio } from '../../lib/configuracion-sitio-server';
 export const prerender = false;
 
 const { id } = Astro.params;
-const legacyId = Number(id);
-const idValido = Number.isInteger(legacyId) && legacyId > 0;
+const codigo = Number(id);
+const idValido = Number.isInteger(codigo) && codigo > 0;
 
 const resultado = idValido
-  ? await getProductByLegacyId(legacyId)
+  ? await getProductPorCodigo(codigo)
   : { ok: true, product: null };
 
 // Si la consulta falló (Supabase caído, red, RLS) NO devolvemos 404: eso le
@@ -31,9 +32,24 @@ const resultado = idValido
 // anduvo y la propiedad realmente no está.
 const product = resultado.ok
   ? resultado.product
-  : (productsData.find((p) => p.id === legacyId) ?? null);
+  : (productsData.find((p) => p.id === codigo) ?? null);
 
 const desdeFallback = !resultado.ok && product !== null;
+
+/**
+ * TRES desenlaces distintos, no dos.
+ *
+ *   1. La consulta anduvo y la propiedad no está  -> 404 de verdad.
+ *   2. La consulta falló y el fallback la tiene   -> se sirve del fallback.
+ *   3. La consulta falló y el fallback NO la tiene -> NO SABEMOS si existe.
+ *
+ * El caso 3 es el que faltaba y terminaba en 404. Pasa con cualquier propiedad
+ * cargada desde el panel después de que se congeló `data.jsx`: si Supabase se
+ * cae, el fallback no la tiene. Contestar 404 ahí le dice al buscador que
+ * desindexe una ficha que está perfecta, y recuperar posicionamiento cuesta
+ * semanas para un problema que dura minutos.
+ */
+const problemaTecnico = !resultado.ok && product === null;
 
 // Fase 6.6: los datos de contacto salen de la base, no del codigo.
 const configuracion = await getConfiguracionSitio();
@@ -51,6 +67,17 @@ if (product) {
     'Cache-Control',
     desdeFallback ? 'public, max-age=0, must-revalidate' : CACHE_CONTROL
   );
+} else if (problemaTecnico) {
+  // 503 y no 404: "volvé más tarde", no "esto no existe". Es la respuesta que
+  // la documentación de Google indica para indisponibilidad temporal, y la
+  // única que no toca el índice.
+  Astro.response.status = 503;
+  // `Retry-After` en segundos. 120 es suficiente para un reinicio y lo bastante
+  // corto para que el buscador vuelva a probar pronto.
+  Astro.response.headers.set('Retry-After', '120');
+  // Que NADIE cachee una respuesta de error: ni el CDN ni el browser. Si no, la
+  // caída se sigue sirviendo después de que Supabase volvió.
+  Astro.response.headers.set('Cache-Control', 'no-store');
 } else {
   // Antes esto hacía `Astro.redirect('/404')`, una ruta que NO existía: el
   // visitante terminaba en una página inexistente y el buscador recibía un 302
@@ -80,6 +107,13 @@ const mainImage = mainImageRaw
         currentUrl={currentUrl}
         configuracion={configuracion}
       />
+    </Layout>
+  ) : problemaTecnico ? (
+    <Layout
+      title="Estamos con problemas técnicos | Inmobiliaria Sonia Flores"
+      description="No pudimos cargar esta propiedad en este momento. Probá de nuevo en unos minutos."
+    >
+      <ProblemaTecnico />
     </Layout>
   ) : (
     <Layout

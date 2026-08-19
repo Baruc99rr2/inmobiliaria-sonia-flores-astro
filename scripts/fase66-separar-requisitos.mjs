@@ -114,8 +114,8 @@ if (APLICAR && texto !== original) {
 const sb = createClient(process.env.PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 const { data: filas, error } = await sb
   .from('properties')
-  .select('id, legacy_id, description, requisitos')
-  .order('legacy_id');
+  .select('id, codigo, description, requisitos')
+  .order('codigo');
 
 if (error) {
   console.log('\nERROR al leer la base:', error.message);
@@ -128,10 +128,10 @@ for (const f of filas) {
   const { descripcion, requisitos } = separarRequisitos(f.description ?? '');
   if (requisitos) aCambiar.push({ ...f, nuevaDesc: descripcion, requisitos });
 }
-console.log('  filas a cambiar:', aCambiar.length, '->', aCambiar.map((f) => f.legacy_id).join(', '));
+console.log('  filas a cambiar:', aCambiar.length, '->', aCambiar.map((f) => f.codigo).join(', '));
 
 for (const f of aCambiar.slice(0, 2)) {
-  console.log(`\n  --- ejemplo id ${f.legacy_id} ---`);
+  console.log(`\n  --- ejemplo id ${f.codigo} ---`);
   console.log('    descripcion queda:', JSON.stringify('…' + f.nuevaDesc.slice(-70)));
   console.log('    requisitos       :', JSON.stringify(f.requisitos));
 }
@@ -143,7 +143,7 @@ if (APLICAR) {
       .from('properties')
       .update({ description: f.nuevaDesc, requisitos: f.requisitos })
       .eq('id', f.id);
-    if (e) console.log('    ERROR id', f.legacy_id, e.message);
+    if (e) console.log('    ERROR id', f.codigo, e.message);
     else ok++;
   }
   console.log(`\n  -> ${ok}/${aCambiar.length} filas actualizadas`);

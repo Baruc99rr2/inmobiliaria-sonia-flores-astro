@@ -3,16 +3,31 @@
  * Migración de src/data.jsx -> Supabase.
  *
  * Idempotente: se puede correr N veces y el resultado es el mismo. La clave es
- * `legacy_id`, que tiene UNIQUE en la tabla `properties`.
+ * `codigo`, que tiene UNIQUE en la tabla `properties`.
  *
  * Aplica el plan v5 §2.1 (regla barrio -> localidad) y §5.4 (conversiones
  * numéricas). El criterio de aceptación es la tabla de §5.5.
  *
+ * >>> LA ESCRITURA DESDE data.jsx ESTÁ DESACTIVADA (Fase 9). <<<
+ *
+ * Correr esto en modo escritura PISABA lo cargado desde el panel con el
+ * contenido congelado de `data.jsx`. Pasó dos veces: se perdieron los títulos
+ * editados, y otra vez el precio, el tipo y la localidad de una propiedad. El
+ * problema nunca fue que `data.jsx` existiera —sigue vivo como fallback de
+ * lectura—, sino que este script lo usara como fuente para ESCRIBIR.
+ *
+ * Ya no hay forma de correrlo "sin querer": intentarlo aborta con una
+ * explicación. Para restaurar de verdad se usa `--restaurar-desde-json`, que se
+ * alimenta del respaldo de `scripts/respaldo-base.mjs` —el estado REAL de la
+ * base— y no de `data.jsx`.
+ *
  * Uso:
- *   node scripts/migrate-data.mjs --dry-run   # no toca la base, imprime todo
- *   node scripts/migrate-data.mjs --check     # dry-run + tabla de aceptación §5.5
- *   node scripts/migrate-data.mjs             # migra de verdad
- *   node scripts/migrate-data.mjs --verify    # lee de la base y compara con §5.5
+ *   node scripts/migrate-data.mjs --verify     # SOLO LEE. Compara la base con §5.5
+ *   node scripts/migrate-data.mjs --dry-run    # SOLO LEE. Imprime lo que haría
+ *   node scripts/migrate-data.mjs --check      # SOLO LEE. dry-run + tabla §5.5
+ *   node scripts/migrate-data.mjs              # ABORTA. Ver el mensaje
+ *
+ *   node scripts/restaurar-desde-respaldo.mjs <carpeta>   # emergencia real
  *
  * Usa SUPABASE_SERVICE_ROLE_KEY (la secret key), que saltea RLS. Corre solo en
  * la máquina del dev: nunca se despliega.
@@ -153,7 +168,7 @@ function construirFilas(productsData) {
     const priceFrom = /precios?\s+desde/i.test(p.description ?? '');
 
     return {
-      legacy_id: p.id,
+      codigo: p.id,
       slug,
       name: p.name ?? '',
       // Fase 6.6: el bloque de requisitos YA NO viene adentro de la descripción.
@@ -229,29 +244,29 @@ function validar(filas) {
   const problemas = [];
 
   for (const f of filas) {
-    if (!f.name) problemas.push(`id ${f.legacy_id}: sin título`);
-    if (!f.operation) problemas.push(`id ${f.legacy_id}: sin operación`);
-    if (!f.tipo_legacy_label) problemas.push(`id ${f.legacy_id}: sin tipo`);
+    if (!f.name) problemas.push(`id ${f.codigo}: sin título`);
+    if (!f.operation) problemas.push(`id ${f.codigo}: sin operación`);
+    if (!f.tipo_legacy_label) problemas.push(`id ${f.codigo}: sin tipo`);
 
     // La convención que asumen tres componentes del sitio.
     if (f._media.length > 0 && f._media[0].kind !== 'image') {
       problemas.push(
-        `id ${f.legacy_id}: el primer elemento de images es VIDEO (${f._media[0].url}). ` +
+        `id ${f.codigo}: el primer elemento de images es VIDEO (${f._media[0].url}). ` +
           'Tres componentes hacen images[0] sin filtrar y mostrarían una imagen rota.'
       );
     }
     if (f._media.length === 0) {
-      problemas.push(`id ${f.legacy_id}: sin imágenes`);
+      problemas.push(`id ${f.codigo}: sin imágenes`);
     }
 
     // El check medidas_sin_cero rechazaría estos.
     for (const campo of ['superficie_m2', 'frente_m', 'fondo_m']) {
       if (f[campo] !== null && !(f[campo] > 0)) {
-        problemas.push(`id ${f.legacy_id}: ${campo} = ${f[campo]} (debe ser NULL o > 0)`);
+        problemas.push(`id ${f.codigo}: ${campo} = ${f[campo]} (debe ser NULL o > 0)`);
       }
     }
     if (f.price !== null && !(f.price > 0)) {
-      problemas.push(`id ${f.legacy_id}: price = ${f.price} (debe ser NULL o > 0)`);
+      problemas.push(`id ${f.codigo}: price = ${f.price} (debe ser NULL o > 0)`);
     }
   }
 
@@ -307,7 +322,7 @@ function compararCon55(filas) {
   lineas.push('----+-----------+--------------+-----------------------+------------------+------------------------------------+----');
 
   for (const f of filas) {
-    const esperado = ESPERADO_55[f.legacy_id];
+    const esperado = ESPERADO_55[f.codigo];
     if (!esperado) continue;
 
     const tipoSlug = TIPO_SLUG_POR_LEGACY[f.tipo_legacy_label] ?? '???';
@@ -327,7 +342,7 @@ function compararCon55(filas) {
 
     lineas.push(
       [
-        String(f.legacy_id).padEnd(3),
+        String(f.codigo).padEnd(3),
         String(f.price ?? 'NULL').padEnd(9),
         tipoSlug.padEnd(12),
         String(f.localidad_slug).padEnd(21),
@@ -340,18 +355,33 @@ function compararCon55(filas) {
   }
 
   lineas.push('');
+  // §5.5 es la foto del MOMENTO DE LA MIGRACION, no un contrato permanente.
+  // Desde que la duena edita desde el panel, la base diverge a proposito: si
+  // agrega servicios o corrige un precio, esta fila deja de "coincidir" y esta
+  // perfecto. Por eso las diferencias se informan y NO cuentan como error.
+  //
+  // Se comprobo con un caso real: la propiedad 1 aparecia como falla porque le
+  // cargaron 6 servicios desde el panel y §5.5 la tiene sin ninguno.
+  //
+  // Lo que si sigue siendo error son los chequeos estructurales de mas abajo
+  // (superficies, contables, expensas): esos describen INVARIANTES, no valores
+  // que ella pueda cambiar.
   lineas.push(
     fallos === 0
-      ? '✅ Las 18 filas coinciden con la tabla §5.5.'
-      : `❌ ${fallos} fila(s) NO coinciden con §5.5.`
+      ? '✅ Las filas migradas coinciden con la tabla §5.5.'
+      : `ℹ️  ${fallos} fila(s) difieren de §5.5. Es ESPERABLE si se editaron desde el panel:` +
+        ' §5.5 es la foto de la migración, no un contrato permanente. Mirá el detalle' +
+        ' arriba y confirmá que los cambios sean los que hizo la dueña.'
   );
+  // Las diferencias contra §5.5 no hacen fallar el comando.
+  fallos = 0;
 
   // Chequeos extra que la tabla menciona en prosa.
   lineas.push('');
   lineas.push('--- Superficies con valor (§5.5: solo ids 3, 5 y 11) ---');
   const conSuperficie = filas.filter((f) => f.superficie_m2 !== null);
-  for (const f of conSuperficie) lineas.push(`  id ${f.legacy_id}: ${f.superficie_m2}`);
-  const idsSup = conSuperficie.map((f) => f.legacy_id).filter((id) => id <= 18);
+  for (const f of conSuperficie) lineas.push(`  id ${f.codigo}: ${f.superficie_m2}`);
+  const idsSup = conSuperficie.map((f) => f.codigo).filter((id) => id <= 18);
   lineas.push(
     idsSup.join(',') === '3,5,11' ? '  ✅ coincide' : `  ❌ esperaba 3,5,11 y salió ${idsSup.join(',')}`
   );
@@ -359,7 +389,7 @@ function compararCon55(filas) {
   lineas.push('');
   lineas.push('--- Ceros conservados como "No tiene" ---');
   for (const campo of ['cocheras', 'dormitorios', 'banos']) {
-    const ids = filas.filter((f) => f[campo] === 0 && f.legacy_id <= 18).map((f) => f.legacy_id);
+    const ids = filas.filter((f) => f[campo] === 0 && f.codigo <= 18).map((f) => f.codigo);
     const esperados = {
       cocheras: '3,8,12,13,14,15,16,18',
       dormitorios: '4,8,13,14,18',
@@ -380,7 +410,7 @@ function compararCon55(filas) {
 
 /** La id 19 no está en §5.5: se verifica contra data.jsx directamente. */
 function reportar19(filas, productsData) {
-  const f = filas.find((x) => x.legacy_id === 19);
+  const f = filas.find((x) => x.codigo === 19);
   if (!f) return 'La id 19 no está en data.jsx.';
   const p = productsData.find((x) => x.id === 19);
   const d = p.detalles;
@@ -457,13 +487,13 @@ async function migrar(filas) {
   const faltantes = [];
   for (const f of filas) {
     if (!idTipoPorLegacy.has(f.tipo_legacy_label))
-      faltantes.push(`property_types.legacy_label = '${f.tipo_legacy_label}' (id ${f.legacy_id})`);
+      faltantes.push(`property_types.legacy_label = '${f.tipo_legacy_label}' (id ${f.codigo})`);
     if (!idLocalidad.has(f.localidad_slug))
-      faltantes.push(`localidades.slug = '${f.localidad_slug}' (id ${f.legacy_id})`);
+      faltantes.push(`localidades.slug = '${f.localidad_slug}' (id ${f.codigo})`);
     if (f.neighborhood_slug && !idBarrio.has(f.neighborhood_slug))
-      faltantes.push(`neighborhoods.slug = '${f.neighborhood_slug}' (id ${f.legacy_id})`);
+      faltantes.push(`neighborhoods.slug = '${f.neighborhood_slug}' (id ${f.codigo})`);
     for (const s of f._servicios) {
-      if (!idServicio.has(s)) faltantes.push(`services.slug = '${s}' (id ${f.legacy_id})`);
+      if (!idServicio.has(s)) faltantes.push(`services.slug = '${s}' (id ${f.codigo})`);
     }
   }
   if (faltantes.length) {
@@ -483,15 +513,15 @@ async function migrar(filas) {
 
   const { data: guardadas, error: errProps } = await db
     .from('properties')
-    .upsert(payload, { onConflict: 'legacy_id' })
-    .select('id, legacy_id');
+    .upsert(payload, { onConflict: 'codigo' })
+    .select('id, codigo');
   if (errProps) throw new Error(`Guardando properties: ${errProps.message}`);
 
-  const idPorLegacy = new Map(guardadas.map((p) => [p.legacy_id, p.id]));
+  const idPorCodigo = new Map(guardadas.map((p) => [p.codigo, p.id]));
   console.log(`  properties: ${guardadas.length} filas upserteadas`);
 
   // --- tablas hijas: se reemplazan enteras, así la corrida es idempotente ---
-  const ids = [...idPorLegacy.values()];
+  const ids = [...idPorCodigo.values()];
 
   const delMedia = await db.from('property_media').delete().in('property_id', ids);
   if (delMedia.error) throw new Error(`Borrando media: ${delMedia.error.message}`);
@@ -500,7 +530,7 @@ async function migrar(filas) {
 
   const mediaPayload = filas.flatMap((f) =>
     f._media.map((m) => ({
-      property_id: idPorLegacy.get(f.legacy_id),
+      property_id: idPorCodigo.get(f.codigo),
       url: m.url,
       storage_path: null, // legacy: vive en /public, no en el bucket. No borrar del bucket.
       kind: m.kind,
@@ -516,7 +546,7 @@ async function migrar(filas) {
 
   const servPayload = filas.flatMap((f) =>
     f._servicios.map((s) => ({
-      property_id: idPorLegacy.get(f.legacy_id),
+      property_id: idPorCodigo.get(f.codigo),
       service_id: idServicio.get(s),
     }))
   );
@@ -537,18 +567,40 @@ async function verificarContraLaBase() {
   if (!url || !secret) throw new Error('Faltan las variables de entorno de Supabase.');
 
   const db = createClient(url, secret, { auth: { persistSession: false } });
-  const { data, error } = await db
+  let { data, error } = await db
     .from('properties')
     .select(
-      `legacy_id, price, price_from, hide_location, superficie_m2, cocheras, dormitorios, banos, expensas,
+      `codigo, price, price_from, hide_location, superficie_m2, cocheras, dormitorios, banos, expensas,
        property_types ( slug ), localidades ( slug ), neighborhoods ( slug ),
        property_services ( services ( slug ) ), property_media ( url, kind, sort_order )`
     )
-    .order('legacy_id');
+    .order('codigo');
   if (error) throw new Error(error.message);
 
+  // §5.5 describe SOLO las propiedades que vinieron de data.jsx. Las que carga
+  // la dueña desde el panel no estan ahi y no tienen por que cumplirla: la 21,
+  // por ejemplo, tiene expensas, y §2.3 dice "todas NULL" refiriendose a las
+  // originales.
+  //
+  // Sin este recorte, cada alta nueva hacia que --verify reportara una falla, y
+  // una comprobacion que grita en falso termina ignorandose. El limite se toma
+  // de data.jsx y no de un numero fijo, para que siga valiendo si alguna vez se
+  // agrega una fila a ese archivo.
+  const productsData = await leerDataJsx();
+  const idsDeDataJsx = new Set(productsData.map((p) => p.id));
+  const delPanel = data.filter((r) => !idsDeDataJsx.has(r.codigo));
+  data = data.filter((r) => idsDeDataJsx.has(r.codigo));
+
+  if (delPanel.length) {
+    console.log('');
+    console.log('  ' + delPanel.length + ' propiedad(es) cargadas desde el panel quedan fuera de §5.5: ' +
+      delPanel.map((r) => r.codigo).join(', '));
+    console.log('  §5.5 describe las que vinieron de data.jsx. Esto NO es un error.');
+    console.log('');
+  }
+
   const filas = data.map((r) => ({
-    legacy_id: r.legacy_id,
+    codigo: r.codigo,
     price: r.price === null ? null : Number(r.price),
     price_from: r.price_from,
     hide_location: r.hide_location,
@@ -576,6 +628,41 @@ async function verificarContraLaBase() {
 // main
 // ---------------------------------------------------------------------------
 async function main() {
+  // El portón. Va ANTES de todo lo demás, incluso antes de leer data.jsx: si
+  // alguien tipea el comando de memoria, tiene que chocar acá y no a mitad de
+  // camino con medio upsert hecho.
+  if (!VERIFY && !DRY_RUN) {
+    console.error(`
+╔══════════════════════════════════════════════════════════════════════════╗
+║  ESTE COMANDO YA NO ESCRIBE EN LA BASE                                   ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+Migrar desde src/data.jsx PISA lo que se cargó desde el panel. Ya pasó dos
+veces: se perdieron títulos editados, y en otra ocasión el precio, el tipo y la
+localidad de una propiedad.
+
+data.jsx es un snapshot CONGELADO de las 20 propiedades originales. Hoy sirve
+solo como fallback de lectura si Supabase se cae. No es la fuente de verdad: la
+fuente de verdad es la base.
+
+Qué hacer según lo que necesites:
+
+  Ver si la base coincide con la tabla §5.5
+      node --env-file=.env scripts/migrate-data.mjs --verify
+
+  Ver qué haría esta migración, sin tocar nada
+      node --env-file=.env scripts/migrate-data.mjs --dry-run
+
+  Cargar una propiedad nueva
+      Desde el panel: /admin/propiedades/nueva
+
+  RESTAURAR porque la base perdió datos de verdad
+      node --env-file=.env scripts/respaldo-base.mjs            (respaldo primero)
+      node --env-file=.env scripts/restaurar-desde-respaldo.mjs respaldos/<carpeta>
+`);
+    process.exit(1);
+  }
+
   if (VERIFY) {
     const fallos = await verificarContraLaBase();
     process.exit(fallos === 0 ? 0 : 1);

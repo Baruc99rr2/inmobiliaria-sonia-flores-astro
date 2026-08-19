@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { estaDisponible } from "../lib/mapProperty";
 import { portadaDe } from "../lib/media";
 // Importación directa de los datos sin depender de ShopContext

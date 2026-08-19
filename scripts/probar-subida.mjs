@@ -6,7 +6,6 @@
  */
 import { readFileSync } from 'node:fs';
 
-const TIPOS_IMAGEN = ['image/jpeg', 'image/png', 'image/webp'];
 const TIPOS_VIDEO = ['video/mp4'];
 const TOPE = 50 * 1024 * 1024;
 const mb = (b) => `${Math.round(b / (1024 * 1024))} MB`;

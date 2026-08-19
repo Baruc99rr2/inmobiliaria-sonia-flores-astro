@@ -28,7 +28,7 @@ const del = await anon.from('property_notes').delete().neq('id', '00000000-0000-
 chequear('anon NO puede borrar', !!del.error || (del.data ?? []).length === 0, del.error?.message ?? '');
 
 console.log('\n=== ROUND-TRIP CONTRA LA BASE ===');
-const { data: prop } = await svc.from('properties').select('id, legacy_id').eq('legacy_id', 1).single();
+const { data: prop } = await svc.from('properties').select('id, codigo').eq('codigo', 1).single();
 await svc.from('property_notes').delete().eq('property_id', prop.id).like('body', 'zz-prueba-8a%');
 
 const TEXTO = 'zz-prueba-8a — el dueño acepta hasta $50.000 menos.\nLlamar antes de las 18.\n"Comillas", tildes y ñ.';

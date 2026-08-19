@@ -186,7 +186,7 @@ export default function FormularioPropiedad({ id }: { id?: string }) {
           setCargando(false);
           return;
         }
-        const { id: _i, legacy_id: _l, published, ...resto } = p.propiedad;
+        const { id: _i, codigo: _l, published, ...resto } = p.propiedad;
         baseDatos = resto;
         baseNumericos = numericosDesdeDb(resto);
         baseServicios = await obtenerServicios(id);

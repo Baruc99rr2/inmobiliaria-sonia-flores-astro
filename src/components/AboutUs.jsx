@@ -1,4 +1,3 @@
-import React from 'react';
 import { FiCheckCircle, FiEye } from 'react-icons/fi';
 // IMPORTACIÓN DEL VIDEO
 import videoPresentacion from '../assets/presentacion.mp4';

@@ -1,19 +1,16 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import { BsInstagram } from 'react-icons/bs'
-import { FaFacebook, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope } from 'react-icons/fa'
+import { FaFacebook, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope, FaLock } from 'react-icons/fa'
 import SoniaLogo from '../assets/SoniaLogo.png'; 
+import { enviarConsulta, propiedadDeLaUrl } from '../lib/contacto';
 
 // Extraemos la URL en string (.src) del objeto que genera Astro
 const logoUrl = SoniaLogo?.src || SoniaLogo;
 
-// Solución puente (Fase 0.6). Se retira entera en la Fase 8.5, cuando el formulario
-// pase a escribir en la tabla contact_messages de Supabase.
-//
-// La access key de Web3Forms es pública por diseño: ellos documentan que "no es una
-// API key secreta" y que va dentro del <form>. Por eso lleva prefijo PUBLIC_.
-// El DESTINATARIO no se configura acá: está atado a la key, y se cambia desde el
-// panel de Web3Forms (hoy va a baruc276@gmail.com).
-const WEB3FORMS_ACCESS_KEY = import.meta.env.PUBLIC_WEB3FORMS_ACCESS_KEY;
+// FASE 8.5: se retiró Web3Forms. El mensaje va a `contact_messages` en Supabase
+// y la dueña lo lee desde el panel. La variable PUBLIC_WEB3FORMS_ACCESS_KEY
+// sigue en el .env a propósito, marcada como sin uso, por si hay que volver
+// atrás rápido. Ver `src/lib/contacto.ts`.
 
 const ESTADO_INICIAL = {
   nombre: '', email: '', telefono: '', ciudad: '', asunto: '', mensaje: ''
@@ -34,57 +31,47 @@ const Footer = () => {
     e.preventDefault();
     if (enviando) return;
 
-    // Honeypot: si viene con contenido, es un bot. Cortamos sin avisarle nada.
-    // Web3Forms además valida "botcheck" de su lado.
-    if (e.target.botcheck?.checked) return;
+    // Puede llegar un click (el botón es `type="button"`, ver el comentario del
+    // <form>) o un submit. Desde un botón, `.form` da el formulario; desde el
+    // submit, el formulario ES el currentTarget.
+    const form = e.currentTarget?.form ?? e.currentTarget ?? null;
 
-    if (!WEB3FORMS_ACCESS_KEY) {
-      setResultado({
-        ok: false,
-        texto: 'El formulario no está configurado. Escribinos por teléfono o por WhatsApp al 388 54881245.'
-      });
-      return;
-    }
+    // Al no haber botón submit, el navegador ya no valida `required` solo. Se le
+    // pide explícitamente para que el visitante siga viendo los mismos avisos de
+    // campo obligatorio de siempre.
+    if (form?.reportValidity && !form.reportValidity()) return;
+
+    // Honeypot: si viene con contenido, es un bot. Cortamos sin avisarle nada.
+    // Sigue teniendo sentido en el cliente —su gracia es que el bot complete un
+    // campo que un humano no ve—, pero el LÍMITE DE ENVÍOS ya no está acá: lo
+    // hace un trigger en la base, porque un tope en JavaScript se saltea
+    // abriendo la consola. Ver `scripts/fase85-contacto.sql`.
+    if (form?.botcheck?.checked) return;
 
     setEnviando(true);
     setResultado(null);
 
-    try {
-      const respuesta = await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          access_key: WEB3FORMS_ACCESS_KEY,
-          subject: `Consulta web: ${formData.asunto || 'sin asunto'} — ${formData.nombre}`,
-          from_name: 'Web Inmobiliaria Sonia Flores',
-          ...formData
-        })
-      });
+    // Si la consulta salió desde una ficha, queda atada a esa propiedad. Se
+    // saca de la URL porque este formulario vive en el layout y no sabe qué
+    // página lo contiene.
+    const propiedadCodigo =
+      typeof window !== 'undefined' ? propiedadDeLaUrl(window.location.pathname) : null;
 
-      const datos = await respuesta.json().catch(() => ({}));
+    const r = await enviarConsulta({ ...formData, propiedadCodigo });
 
-      // Web3Forms devuelve { success: false } con HTTP 200 en algunos errores,
-      // así que no alcanza con mirar respuesta.ok.
-      if (!respuesta.ok || !datos.success) {
-        throw new Error(datos.message || `El servidor respondió ${respuesta.status}`);
-      }
-
+    if (r.ok) {
       setResultado({
         ok: true,
         texto: `¡Gracias ${formData.nombre}! Recibimos tu consulta y te vamos a responder a la brevedad.`
       });
       setFormData(ESTADO_INICIAL);
-    } catch (error) {
-      // No limpiamos el formulario: lo que escribió el usuario tiene que seguir ahí
-      // para que pueda reintentar sin volver a tipear todo.
-      setResultado({
-        ok: false,
-        texto: 'No pudimos enviar tu consulta. Revisá tu conexión y probá de nuevo, o escribinos al 388 54881245.'
-      });
-      console.error('Web3Forms:', error);
-    } finally {
-      setEnviando(false);
+    } else {
+      // No limpiamos el formulario: lo que escribió tiene que seguir ahí para
+      // que pueda reintentar sin volver a tipear todo.
+      setResultado({ ok: false, texto: r.error });
     }
+
+    setEnviando(false);
   };
 
   return (
@@ -106,6 +93,16 @@ const Footer = () => {
             />
           </div>
 
+          {/* `method="post"` y `action` vacío NO alcanzan: sin JavaScript, un
+              <form> con un botón submit manda los datos por GET a la URL actual.
+              Se comprobó: el nombre, el correo, el teléfono y el mensaje del
+              visitante terminaron en la barra de direcciones, y de ahí van al
+              historial del navegador y a los registros del servidor.
+              Este formulario NO funciona sin JavaScript de ninguna manera —el
+              envío lo hace React—, así que la única salida sensata es que sin JS
+              no pase nada, en vez de que se filtren datos. Por eso el botón es
+              `type="button"`: sin submit no hay envío nativo, y sin botón submit
+              tampoco hay envío implícito al apretar Enter. */}
           <form onSubmit={handleSubmit} className='space-y-3 bg-black/30 p-4 rounded-xl border border-white/5 backdrop-blur-sm shadow-xl'>
             <h3 className='text-sm font-semibold tracking-wide border-b border-white/10 pb-1.5 mb-1'>Formulario de Contacto</h3>
             
@@ -158,7 +155,8 @@ const Footer = () => {
             />
 
             <button
-              type="submit"
+              type="button"
+              onClick={handleSubmit}
               disabled={enviando}
               className={`w-full text-white font-bold uppercase text-xs tracking-wider py-2.5 rounded-md transition-all duration-300 shadow-md ${
                 enviando
@@ -249,6 +247,17 @@ const Footer = () => {
       {/* Copyright */}
       <div className='text-center pt-4'>
         <p className='text-gray-500 text-[11px]'>©SkyTech Jujuy 2026. Todos los derechos reservados.</p>
+
+        {/* Acceso al panel. No se esconde: quien no es la dueña se topa con el
+            login y no pasa de ahí, y esconderlo solo lograría que ella no lo
+            encuentre. Lo que protege es RLS, no que el enlace sea secreto. */}
+        <a
+          href="/admin"
+          className='inline-flex items-center gap-1.5 rounded-md bg-[#c9412e] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-white transition-colors hover:bg-[#b43a29]'
+        >
+          <FaLock className='text-[9px]' />
+          Ingresar a sección administración
+        </a>
       </div>
     </div>
   )

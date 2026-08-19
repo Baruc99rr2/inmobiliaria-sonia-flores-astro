@@ -30,7 +30,7 @@
 
 /** Campos que el sitio público necesita. La Fase 3 usa exactamente este select. */
 export const PROPERTY_SELECT = `
-  legacy_id, slug, name, description, operation,
+  codigo, slug, name, description, operation,
   price, show_price, price_from,
   calle, numero, show_exact_address, hide_location,
   ambientes, dormitorios, banos, cocheras, expensas,
@@ -142,7 +142,7 @@ export function mapDbToProduct(row: any) {
   const ubicacionOculta = Boolean(row.hide_location);
 
   return {
-    id: row.legacy_id,
+    id: row.codigo,
     images,
     name: row.name ?? '',
     price: precio(row),
@@ -245,7 +245,7 @@ export function etiquetaEstado(producto: { detalles?: { estado?: string } }): st
  *
  * Las que ya no están disponibles van AL FINAL, nunca ocultas: la dueña las
  * quiere a la vista como muestrario de lo que opera. Dentro de cada grupo se
- * mantiene el orden de siempre (`sort_order`, después `legacy_id`).
+ * mantiene el orden de siempre (`sort_order`, después `codigo`).
  */
 export function mapDbToProducts(rows: any[]) {
   return [...(rows ?? [])]
@@ -254,7 +254,7 @@ export function mapDbToProducts(rows: any[]) {
         Number(estadoValido(a.estado) !== 'disponible') -
           Number(estadoValido(b.estado) !== 'disponible') ||
         (a.sort_order ?? 0) - (b.sort_order ?? 0) ||
-        (a.legacy_id ?? 0) - (b.legacy_id ?? 0)
+        (a.codigo ?? 0) - (b.codigo ?? 0)
     )
     .map(mapDbToProduct);
 }
