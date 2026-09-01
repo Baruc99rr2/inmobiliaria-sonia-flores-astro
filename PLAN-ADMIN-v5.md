@@ -804,6 +804,8 @@ Tier gratuito: **1 GB**. Casi todas las propiedades tienen `.mp4`. Los videos ac
 
 | 13 | **Activar el "Inactivity timeout" del servidor de Supabase cuando el proyecto pase al plan Pro.** Hoy el cierre por inactividad es 100% del lado del cliente (Fase 6f). El ajuste del servidor es red de fondo, **no reemplazo**: para Supabase "actividad" es que se refresque el token, no que haya alguien usando el panel, y `supabase-js` refresca solo en segundo plano | Dashboard de Supabase → Auth → Sessions | 🟡 Baja — requiere plan Pro |
 
+| 15 | **CARTO va a retirar los tiles rasterizados.** Avisaron que discontinúan el servicio, sin dar fecha. Es el fondo de los CUATRO mapas del proyecto. Cuando pase, hay que migrar a otro proveedor (OpenStreetMap directo, MapTiler, Stadia…). La migración toca **un solo archivo**, `src/lib/mapa-tiles.ts`, porque las URLs están centralizadas ahí a propósito | `src/lib/mapa-tiles.ts` | 🟠 Media — **plazo desconocido, no urgente** |
+
 | 14 | **`public/` sin limpiar.** Las fotos originales siguen versionadas en el repo. Las 21 propiedades actuales todavía las usan (81 de 82 filas de `property_media` son legacy), así que NO es un borrado a ciegas. Revisar cuando la mayoría del media esté en el bucket | `public/propiedades/` | 🟡 Baja — **pendiente, no descartado** |
 
 | 12 | **`etiquetaZona()` detecta la ubicación reservada por dos vías**: `hide_location`, que expone el adaptador desde la Fase 3.5, y el centinela `'A consultar'` en `barrio` y `calle`, que es lo único que tiene el fallback de `data.jsx`. La segunda vía es deuda deliberada, no un descuido | `src/lib/format.js` (`formatUbicacion`, `etiquetaZona`) | 🟢 **YA NO ES DEUDA — ver abajo** |

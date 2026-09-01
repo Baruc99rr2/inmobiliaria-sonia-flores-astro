@@ -8,6 +8,7 @@ import L from 'leaflet';
 import { formatTriEstado, formatMedida, formatUbicacion, etiquetaZona } from '../lib/format';
 import { estaDisponible } from '../lib/mapProperty';
 import { esVideo, kindDe, SIN_FOTO } from '../lib/media';
+import { TILES_CLARO, ATRIBUCION_MAPA } from '../lib/mapa-tiles';
 import {
     CONFIGURACION_POR_DEFECTO,
     lineaDeContacto,
@@ -316,7 +317,7 @@ const ProductDetailsReact = ({ product, currentUrl, configuracion }) => {
                     <div className="bg-white rounded-3xl border border-gray-100 shadow-lg overflow-hidden lg:sticky lg:top-8">
                         <div className="h-[300px] sm:h-[380px] lg:h-[520px] w-full relative z-10 isolation-auto">
                             <MapContainer center={coords} zoom={15} className="w-full h-full z-0">
-                                <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+                                <TileLayer url={TILES_CLARO} attribution={ATRIBUCION_MAPA} />
                                 <Marker position={coords} icon={L.divIcon({ className: 'custom-marker', html: `<div class="w-9 h-9 bg-red-600 rounded-full border-4 border-white shadow-xl"></div>` })} />
                             </MapContainer>
 
@@ -403,7 +404,7 @@ const ProductDetailsReact = ({ product, currentUrl, configuracion }) => {
                         onClick={(e) => e.stopPropagation()}
                     >
                         <MapContainer center={coords} zoom={17} className="w-full h-full">
-                            <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+                            <TileLayer url={TILES_CLARO} attribution={ATRIBUCION_MAPA} />
                             <Marker position={coords} icon={L.divIcon({ className: 'custom-marker', html: `<div class="w-12 h-12 bg-red-600 rounded-full border-4 border-white shadow-2xl flex items-center justify-center"><div class="w-5 h-5 bg-white rounded-full"></div></div>` })} />
                         </MapContainer>
                     </div>
