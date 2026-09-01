@@ -7,6 +7,7 @@ import { Button } from '@/components/admin/ui/button';
 import { Input } from '@/components/admin/ui/input';
 import { Label } from '@/components/admin/ui/label';
 import { useIsMobile } from '@/components/admin/hooks/use-mobile';
+import { TILES_CLARO, ATRIBUCION_MAPA } from '@/lib/mapa-tiles';
 
 /**
  * Mapa del formulario, con marcador arrastrable (Fase 6e).
@@ -169,7 +170,7 @@ export default function CampoMapa({
           scrollWheelZoom={false}
           style={{ height: 320, width: '100%' }}
         >
-          <TileLayer url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png" />
+          <TileLayer url={TILES_CLARO} attribution={ATRIBUCION_MAPA} />
           <Gestos activo={activo} />
           <Recentrar hacia={recentrarHacia.current} sello={selloRecentrar} />
           <PonerAlTocar onPoner={ponerEn} />

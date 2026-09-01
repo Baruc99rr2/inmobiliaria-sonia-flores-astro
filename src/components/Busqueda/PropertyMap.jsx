@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { portadaDe } from "../../lib/media";
+import { TILES_OSCURO, ATRIBUCION_MAPA } from "../../lib/mapa-tiles";
 
 const PropertyMap = ({ 
   filteredProducts = [], 
@@ -22,8 +23,9 @@ const PropertyMap = ({
       attributionControl: false 
     }).setView([-24.185, -65.300], 13);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer(TILES_OSCURO, {
       maxZoom: 19,
+      attribution: ATRIBUCION_MAPA,
     }).addTo(mapInstance.current);
 
     markersGroup.current = L.layerGroup().addTo(mapInstance.current);
