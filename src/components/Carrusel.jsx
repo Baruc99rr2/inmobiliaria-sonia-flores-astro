@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { estaDisponible } from "../lib/mapProperty";
 import { portadaDe } from "../lib/media";
+import { fuentesDeImagen, alFallarImagen } from "../lib/imagen";
 // Importación directa de los datos sin depender de ShopContext
 import { productsData } from "../data";
 import { MdLocationOn } from 'react-icons/md';
@@ -76,6 +77,8 @@ const ProductCard = ({ product, radius, index, totalItems }) => {
   // `portadaDe` saltea los videos y cae a un placeholder que SI existe:
   // '/propiedades/unisex.jpg' nunca estuvo en el repo.
   const displayImage = portadaDe(product);
+  // La tarjeta mide 190px en celular y 290 en escritorio.
+  const foto = fuentesDeImagen(displayImage, 480);
 
   const anglePerItem = 360 / totalItems;
   const currentAngle = anglePerItem * index;
@@ -100,7 +103,10 @@ const ProductCard = ({ product, radius, index, totalItems }) => {
       }}
     >
       <img
-        src={displayImage}
+        src={foto.src}
+        srcSet={foto.srcSet}
+        sizes="(max-width: 639px) 190px, 290px"
+        onError={alFallarImagen(displayImage)}
         alt={product.name}
         className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none transition-transform duration-500 group-hover:scale-105 opacity-70"
         loading="lazy"

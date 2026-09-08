@@ -25,7 +25,7 @@ const Hero = ({ onVideoLoaded }) => {
       className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden pt-24 pb-12 min-[1100px]:pt-0 min-[1100px]:pb-0"
       // SE AGREGA LA IMAGEN DE FONDO ACÁ PARA EVITAR PANTALLAZOS GRISES
       style={{
-        backgroundImage: "url('/videos/hero-realstate.jpg')",
+        backgroundImage: "url('/videos/hero-realstate.webp')",
         backgroundSize: "cover",
         backgroundPosition: "center"
       }}
@@ -39,7 +39,7 @@ const Hero = ({ onVideoLoaded }) => {
         playsInline
         preload="auto"
         // Le pasamos la misma imagen al poster por seguridad del navegador
-        poster="/videos/hero-realstate.jpg" 
+        poster="/videos/hero-realstate.webp" 
         // Cuando el video ya cargó lo suficiente para reproducirse, avisa a App.jsx
         onCanPlayThrough={onVideoLoaded}
         className="absolute top-0 left-0 w-full h-full object-cover z-0"

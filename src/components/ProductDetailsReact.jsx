@@ -3,6 +3,7 @@ import { BiChevronLeft, BiChevronRight, BiBed, BiArea, BiHomeAlt, BiCar, BiWater
 import { IoMdClose } from 'react-icons/io';
 import { MdOutlineBathtub, MdLocationOn, MdOutlineLocalDrink, MdOutlineElectricBolt, MdOutlineGasMeter, MdFullscreen, MdInfoOutline } from 'react-icons/md';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import { fuentesDeImagen, alFallarImagen } from '../lib/imagen';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { formatTriEstado, formatMedida, formatUbicacion, etiquetaZona } from '../lib/format';
@@ -150,10 +151,15 @@ const ProductDetailsReact = ({ product, currentUrl, configuracion }) => {
                             <div key={index} className="min-w-full h-full bg-zinc-950 relative flex items-center justify-center overflow-hidden p-4 md:p-6">
                                 {!isVideo && (
                                     <>
-                                        <img 
-                                            src={file} 
-                                            className='absolute inset-0 w-full h-full object-cover blur-3xl opacity-55 scale-110 pointer-events-none' 
-                                            alt="" 
+                                        {/* Este va desenfocado a proposito
+                                            (`blur-3xl`), asi que se sirve la
+                                            version mas chica: nadie puede notar
+                                            la diferencia y ahorra casi todo. */}
+                                        <img
+                                            {...fuentesDeImagen(file, 480)}
+                                            onError={alFallarImagen(file)}
+                                            className='absolute inset-0 w-full h-full object-cover blur-3xl opacity-55 scale-110 pointer-events-none'
+                                            alt=""
                                         />
                                         <div className="absolute inset-0 bg-zinc-950/50 backdrop-blur-md pointer-events-none"></div>
                                     </>
@@ -168,10 +174,12 @@ const ProductDetailsReact = ({ product, currentUrl, configuracion }) => {
                                         onClick={(e) => e.stopPropagation()} 
                                     />
                                 ) : (
-                                    <img 
-                                        src={file} 
-                                        className='relative max-w-full max-h-full object-contain z-10 rounded-lg shadow-2xl' 
-                                        alt={`Vista ${index + 1}`} 
+                                    <img
+                                        {...fuentesDeImagen(file, 1600)}
+                                        sizes="100vw"
+                                        onError={alFallarImagen(file)}
+                                        className='relative max-w-full max-h-full object-contain z-10 rounded-lg shadow-2xl'
+                                        alt={`Vista ${index + 1}`}
                                     />
                                 )}
                             </div>
@@ -384,11 +392,13 @@ const ProductDetailsReact = ({ product, currentUrl, configuracion }) => {
                                                 onClick={e => e.stopPropagation()} 
                                             />
                                         ) : (
-                                            <img 
-                                                src={file} 
-                                                className='max-w-full max-h-full object-contain rounded-md shadow-2xl' 
-                                                onClick={e => e.stopPropagation()} 
-                                                alt="Full" 
+                                            <img
+                                                {...fuentesDeImagen(file, 1600)}
+                                                sizes="100vw"
+                                                onError={alFallarImagen(file)}
+                                                className='max-w-full max-h-full object-contain rounded-md shadow-2xl'
+                                                onClick={e => e.stopPropagation()}
+                                                alt="Full"
                                             />
                                         )}
                                     </div>

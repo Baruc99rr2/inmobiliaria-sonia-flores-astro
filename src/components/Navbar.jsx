@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { BiMenu, BiX } from 'react-icons/bi';
 
 // IMPORTACIÓN DE LOS DOS LOGOS
-import SoniaLogo from '../assets/SoniaLogo.png';
-import SoniaLogo2 from '../assets/SoniaLogo2.png';
+import SoniaLogo from '../assets/SoniaLogo.webp';
+import SoniaLogo2 from '../assets/SoniaLogo2.webp';
 
 /**
  * El corte entre el menú de escritorio y el de celular.
