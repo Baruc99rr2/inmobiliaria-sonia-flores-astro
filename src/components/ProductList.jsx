@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { estaDisponible } from "../lib/mapProperty";
 import { portadaDe } from "../lib/media";
+import { fuentesDeImagen, alFallarImagen } from "../lib/imagen";
 // Importamos los datos directamente sin usar Context
 import { productsData } from "../data"; 
 import { MdLocationOn, MdOutlineBathtub } from 'react-icons/md';
@@ -47,6 +48,9 @@ const ProductCard = ({ product }) => {
   // Antes caia a la foto de OTRA propiedad ('casa-bajolavina-venta.png'), que
   // es peor que un placeholder: mostraba una casa que no era esa.
   const displayImage = portadaDe(product);
+  // La tarjeta mide 300px (340 en escritorio). 480 alcanza y sobra; el
+  // `srcSet` deja que el navegador suba a 800 o 1600 en pantallas densas.
+  const foto = fuentesDeImagen(displayImage, 480);
   
   // Validación de precio para evitar NaN
   const hasValidPrice = product.price !== undefined && product.price !== null && !isNaN(product.price) && product.price !== '';
@@ -74,7 +78,15 @@ const ProductCard = ({ product }) => {
     <div className="airbnb-property-card bg-white rounded-2xl p-4 shadow-md hover:shadow-xl transition-all duration-300 flex flex-col justify-between group w-[300px] md:w-[340px] mx-auto pointer-events-auto font-sans">
       <div>
         <div className="relative w-full h-[210px] md:h-[230px] overflow-hidden rounded-xl mb-3 bg-gray-50 flex items-center justify-center">
-          <img src={displayImage} alt={product.name} className="w-full h-full object-cover select-none pointer-events-none transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+          <img
+            src={foto.src}
+            srcSet={foto.srcSet}
+            sizes="(max-width: 767px) 300px, 340px"
+            onError={alFallarImagen(displayImage)}
+            alt={product.name}
+            className="w-full h-full object-cover select-none pointer-events-none transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
           <div className="absolute top-3 left-3 z-10"><span className="text-[11px] font-bold text-gray-900 bg-white px-2.5 py-1 rounded-md shadow-md uppercase">{product.category || "VENTA"}</span></div>
           <div className="absolute top-3 right-3 bg-white/90 hover:bg-white p-2 rounded-full shadow-md z-10 flex items-center justify-center">{getTypeIcon(product.detalles?.tipo)}</div>
         </div>
@@ -186,6 +198,14 @@ const ProductList = ({ products: productsProp }) => {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
+        }
+
+        /* La otra animación que Lighthouse marcaba como NO compuesta. Mismo
+           caso y mismo criterio que la de Carrusel.jsx: animar
+           \`background-position\` obliga a repintar la sección completa en cada
+           frame. En celular queda el degradado quieto, que se ve igual. */
+        @media (pointer: coarse), (prefers-reduced-motion: reduce) {
+          .animated-gradient-bg { animation: none; }
         }
 
         .dynamic-title { color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.15); }

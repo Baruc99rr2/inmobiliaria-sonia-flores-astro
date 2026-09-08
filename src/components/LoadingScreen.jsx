@@ -1,5 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 
+// Se importa desde `src/assets` en vez de apuntar a `/SoniaLogo.png`: el de
+// `public/` es un PNG de 1920x1080 y 118 KB para un logo que se muestra a 260px
+// como maximo. El WebP equivalente pesa 10 KB, y al importarlo ademas queda con
+// huella en el nombre y cache larga.
+import SoniaLogo from '../assets/SoniaLogo.webp';
+
+const logoUrl = SoniaLogo?.src || SoniaLogo;
+
 const LoadingScreen = ({ onFinish = undefined }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [fadeOut, setFadeOut] = useState(false);
@@ -72,7 +80,7 @@ const LoadingScreen = ({ onFinish = undefined }) => {
       >
         <div className="relative mb-8 max-w-[200px] sm:max-w-[260px] px-4 select-none animate-smooth-pulse">
           <img 
-            src="/SoniaLogo.png" 
+            src={logoUrl} 
             alt="Inmobiliaria Sonia Flores" 
             className="w-full h-auto object-contain drop-shadow-[0_4px_20px_rgba(0,0,0,0.6)]"
             loading="eager"

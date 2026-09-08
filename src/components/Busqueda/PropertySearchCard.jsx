@@ -3,6 +3,7 @@ import MarcaEstado from "../MarcaEstado";
 import { soloImagenes } from "../../lib/media";
 import { MdLocationOn, MdBed, MdBathtub, MdSquareFoot, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { chipTriEstado, chipMedida, etiquetaZona } from '../../lib/format';
+import { fuentesDeImagen, alFallarImagen } from "../../lib/imagen";
 
 const PropertySearchCard = ({ 
   product, 
@@ -50,7 +51,9 @@ const PropertySearchCard = ({
           : "w-full sm:w-[230px] h-[195px] sm:h-[168px]"
       }`}>
         <img
-          src={images[currentImgIndex]}
+          {...fuentesDeImagen(images[currentImgIndex], 480)}
+          sizes="(max-width: 639px) 100vw, 230px"
+          onError={alFallarImagen(images[currentImgIndex])}
           alt={product?.name || "Propiedad"}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"

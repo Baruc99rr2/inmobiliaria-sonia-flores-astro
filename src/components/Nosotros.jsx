@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MdBusiness } from 'react-icons/md';
-import fondoNos from "../assets/fondoNos.jpg"; 
-import SoniaLogo from "../assets/SoniaLogo.png"; 
+import fondoNos from "../assets/fondoNos.webp"; 
+import SoniaLogo from "../assets/SoniaLogo.webp"; 
 
 // Extraemos la URL en string (.src) que genera el procesador de Astro/Vite
 const fondoNosUrl = fondoNos?.src || fondoNos;

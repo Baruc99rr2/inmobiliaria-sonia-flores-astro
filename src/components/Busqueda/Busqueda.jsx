@@ -163,7 +163,15 @@ const Busqueda = ({ products: productsProp, catalogos }) => {
   const totalPages = Math.ceil(sortedProducts.length / ITEMS_PER_PAGE);
 
   return (
-    <div className="w-full relative block bg-gray-50 pt-[75px]">
+    // Mismo caso que la ficha de propiedad: el navbar es `fixed` y no ocupa
+    // lugar en el flujo, así que hay que dejarle el espacio a mano. Antes había
+    // un `pt-[75px]` fijo que se quedó corto —el navbar mide 89px en celular y
+    // 91px en escritorio—, y le tapaba unos 14px a los filtros.
+    //
+    // Ahora usa el alto real que publica `Navbar.jsx` en `--navbar-h`. Los
+    // números del fallback solo valen en el instante previo a que el navbar
+    // hidrate.
+    <div className="w-full relative block bg-gray-50 pt-[var(--navbar-h,89px)] min-[1217px]:pt-[var(--navbar-h,91px)]">
       {/* Filtros Desktop */}
       <SearchFilters
         formInputs={formInputs}
