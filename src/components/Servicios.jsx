@@ -8,10 +8,11 @@ import { Calculator, KeyRound, Handshake, ClipboardList } from "lucide-react";
    alrededor. Mover el destacado a otro servicio es cambiar ESA sola línea; la
    grilla se reacomoda sola porque las clases salen de `medidasDeTarjeta`.
 
-   Está en TASACIONES a propósito y no por descarte: es el primer paso de quien
-   quiere vender, así que es la puerta de entrada natural de la sección. Si la
-   dueña prefiere destacar Alquileres —que es de lo que más hay en la cartera—,
-   se mueve la marca y listo.
+   Está en ALQUILERES por dos motivos. Uno de contenido: es el negocio
+   recurrente de la inmobiliaria, junto con administración, mientras que las
+   tasaciones son puntuales. Y uno de diseño: su texto es el más largo de los
+   cuatro, así que llena la tarjeta grande sin dejar aire. Primero estuvo en
+   TASACIONES y quedaba medio vacía.
 
    Los textos NO se tocaron: son los mismos que ya estaban.
    ========================================================================= */
@@ -22,7 +23,6 @@ const SERVICIOS = [
     titulo: "TASACIONES",
     texto:
       "Para vender tu propiedad, es muy importante conocer el precio real de mercado que esta tiene. El mismo se ajusta al contexto inmobiliario y otros factores decisivos.",
-    destacado: true,
   },
   {
     id: 2,
@@ -30,6 +30,7 @@ const SERVICIOS = [
     titulo: "ALQUILERES",
     texto:
       "Contamos con una amplia cartera de propiedades para alquiler, con excelente ubicación y calidad en sus ambientes. Propiedades en excelente estado, para disfrutar de tu espacio como te merecés.",
+    destacado: true,
   },
   {
     id: 3,
@@ -69,6 +70,21 @@ const SERVICIOS = [
    `backdrop-blur` de "Sobre Mí"), y el síntoma siempre es el mismo: el
    `className` se ve bien en el DOM y no hay ningún efecto.
    ========================================================================= */
+/**
+ * La destacada tiene que ir PRIMERA en el DOM.
+ *
+ * CSS Grid coloca en orden: si la de 2x2 queda en el medio, ocupa las columnas
+ * 2 y 3 de las dos filas, y entonces la ultima tarjeta —que pide 2 columnas— ya
+ * no entra en la segunda fila y se va a una tercera, dejando un hueco blanco a
+ * la derecha. Se vio al mover el destacado de TASACIONES a ALQUILERES.
+ *
+ * El orden de los datos queda como esta —es el orden en que la duena los
+ * enumera— y solo se reordena para dibujar. El `sort` de JavaScript es estable,
+ * asi que los otros tres conservan su orden relativo.
+ */
+const ordenarConDestacadoPrimero = (lista) =>
+  [...lista].sort((a, b) => (b.destacado ? 1 : 0) - (a.destacado ? 1 : 0));
+
 function medidasDeTarjeta(servicio, indice, total) {
   // `lg:justify-center` no es decorativo: al ocupar dos filas, la tarjeta
   // destacada queda mucho más alta que su texto y sin esto el contenido se
@@ -125,7 +141,7 @@ const Servicios = () => {
 
         {/* GRILLA BENTO */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 md:gap-8">
-          {SERVICIOS.map((servicio, indice) => {
+          {ordenarConDestacadoPrimero(SERVICIOS).map((servicio, indice, lista) => {
             const Icono = servicio.icono;
             const destacado = Boolean(servicio.destacado);
 
@@ -141,7 +157,7 @@ const Servicios = () => {
                 className={`group relative flex flex-col overflow-hidden rounded-2xl bg-white p-7 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.35)] transition-[translate,box-shadow] duration-300 ease-out hover:-translate-y-2 hover:shadow-[0_35px_60px_-15px_rgba(0,0,0,0.5)] md:p-8 ${medidasDeTarjeta(
                   servicio,
                   indice,
-                  SERVICIOS.length
+                  lista.length
                 )}`}
               >
                 {/* BORDE SUPERIOR EN EL ROJO DE MARCA.

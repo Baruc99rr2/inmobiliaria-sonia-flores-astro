@@ -1,32 +1,56 @@
 import { useEffect, useRef, useState } from "react";
 import { CalendarDays, BadgeCheck } from "lucide-react";
-import fondoNos from "../assets/fondoNos.webp";
+import cerrosGrande from "../assets/cerros-jujuy-1920.webp";
+import cerrosChico from "../assets/cerros-jujuy-1024.webp";
 import SoniaLogo from "../assets/SoniaLogo.webp";
 
 /* =========================================================================
    EL FONDO DE LA SECCIÓN — ÚNICO PUNTO A TOCAR
 
-   Hoy es una foto de ciudad genérica, con rascacielos que no son de Jujuy y
-   que no dicen nada de la inmobiliaria. Está pendiente que la dueña elija con
-   qué reemplazarla.
+   Es una foto de los cerros de Jujuy con la ruta de entrada. Reemplazó a una
+   ciudad genérica con rascacielos que no eran de acá y no decían nada de la
+   inmobiliaria.
 
-   Cuando se decida, se cambia SOLO acá: el `import` de arriba y, si hiciera
-   falta, la opacidad de la capa oscura. Nada más en el archivo depende de cuál
-   sea la imagen.
+   Para cambiarla de nuevo se toca SOLO este bloque: los dos `import` de arriba
+   y, si hace falta, `oscurecido` y `posicion`. Nada más en el archivo depende de
+   cuál sea la imagen.
 
      - Si la foto nueva es más clara, subir `oscurecido` para que el texto
-       blanco siga legible.
-     - Si es más oscura, bajarlo.
-     - `posicion` sirve si el motivo importante de la foto no está en el centro
-       (por ejemplo "center top" para no cortarle el cielo a un cerro).
+       blanco siga legible. Si es más oscura, bajarlo.
+     - `posicion` sirve cuando el motivo importante no está en el centro. Acá va
+       en 38% porque los cerros están en la mitad de arriba: con `center`, el
+       recorte del `cover` mostraba sobre todo el asfalto de la ruta.
 
    Si en vez de una foto se quiere un color plano, alcanza con poner
-   `imagen: null` y quedan solo las capas de color.
+   `chica: null` y `grande: null`, y quedan solo las capas de color.
+
+   ---
+   DOS ANCHOS, NO UNO
+
+   El original de Unsplash pesa 5,4 MB y mide 5472x4048. Servir eso para un
+   fondo sería tirar a la basura todo lo que se ganó en la Parte 2. Hay dos
+   versiones en WebP: 1024px para celular (119 KB) y 1920px para escritorio
+   (425 KB). Al ir bajo una capa oscura, la calidad puede ser baja sin que se
+   note: 66 en la escala de libwebp.
+
+   El cambio entre una y otra va por media query en el bloque `<style>` de más
+   abajo, no por JavaScript: así lo resuelve el navegador antes de pintar y no
+   se descargan las dos.
    ========================================================================= */
 const FONDO = {
-  imagen: fondoNos?.src || fondoNos,
-  posicion: "center",
-  oscurecido: "bg-black/55",
+  chica: cerrosChico?.src || cerrosChico,
+  grande: cerrosGrande?.src || cerrosGrande,
+  posicion: "center 38%",
+  // 70, bastante más que el 55 de la foto anterior: esta tiene cielo celeste y
+  // nubes blancas, contra la ciudad de noche que había antes.
+  //
+  // El número NO se eligió a ojo. Se midió el contraste real entre el color del
+  // texto y el fondo efectivamente pintado detrás, ocultando el contenido y
+  // leyendo los píxeles. Lo importante fue mirar el PEOR punto y no el
+  // promedio: con 60 el promedio daba 10,7 —parecía perfecto— pero el peor
+  // píxel, una nube, daba 1,24 contra el requisito de 4,5 de la pauta AA.
+  // Con 70 el peor caso queda en 12,1 en celular y 11,8 en escritorio.
+  oscurecido: "bg-black/70",
 };
 
 const SoniaLogoUrl = SoniaLogo?.src || SoniaLogo;
@@ -120,24 +144,14 @@ const Nosotros = () => {
   return (
     <section
       id="about-section"
-      className="relative w-full overflow-hidden bg-stone-950 py-20 sm:py-24 md:py-32"
-      style={
-        FONDO.imagen
-          ? {
-              backgroundImage: `url(${FONDO.imagen})`,
-              backgroundSize: "cover",
-              backgroundPosition: FONDO.posicion,
-            }
-          : undefined
-      }
+      className="fondo-sobre-mi relative w-full overflow-hidden bg-stone-950 py-20 sm:py-24 md:py-32"
     >
       {/* Dos capas sobre la foto: una pareja para legibilidad y un degradado
           desde la izquierda, que es de donde arranca el contenido. */}
       <div className={`absolute inset-0 ${FONDO.oscurecido} pointer-events-none`} />
-      {/* No llega a `transparent` del lado derecho a propósito: ahí va el
-          párrafo, y sobre las ventanas iluminadas de la foto el texto gris
-          perdía contraste. */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/25 pointer-events-none" />
+      {/* El lado derecho llega a 45 y no a 25 como antes: ahí va el párrafo, y
+          medido sobre la foto de los cerros el 25 dejaba pasar las nubes. */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/45 to-black/45 pointer-events-none" />
 
       <div className="relative z-10 mx-auto w-full max-w-6xl px-5 sm:px-8">
         {/* EL LAYOUT ASIMÉTRICO.
@@ -236,6 +250,23 @@ const Nosotros = () => {
 
         </div>
       </div>
+
+      {/* El fondo va por CSS y no en un `style` en linea, porque hace falta una
+          media query para elegir entre la version de 1024 y la de 1920. Si
+          `FONDO.chica` es null, no se pinta nada y queda el color de la
+          seccion. */}
+      {FONDO.chica && (
+        <style>{`
+          .fondo-sobre-mi {
+            background-image: url(${FONDO.chica});
+            background-size: cover;
+            background-position: ${FONDO.posicion};
+          }
+          @media (min-width: 1024px) {
+            .fondo-sobre-mi { background-image: url(${FONDO.grande}); }
+          }
+        `}</style>
+      )}
     </section>
   );
 };
