@@ -188,6 +188,14 @@ const ProductList = ({ products: productsProp }) => {
           100% { background-position: 0% 50%; }
         }
 
+        /* La otra animación que Lighthouse marcaba como NO compuesta. Mismo
+           caso y mismo criterio que la de Carrusel.jsx: animar
+           \`background-position\` obliga a repintar la sección completa en cada
+           frame. En celular queda el degradado quieto, que se ve igual. */
+        @media (pointer: coarse), (prefers-reduced-motion: reduce) {
+          .animated-gradient-bg { animation: none; }
+        }
+
         .dynamic-title { color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.15); }
         .dynamic-subtitle { color: #f3f4f6; opacity: 0.9; }
         .dynamic-icon { color: #fca5a5; }

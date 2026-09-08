@@ -1,6 +1,40 @@
 import { useEffect, useRef } from 'react';
 
-export function BubbleBackground({ interactive = true, className = "", ...props }) {
+/**
+ * Fondo de orbes de colores sobre canvas.
+ *
+ * ---
+ * LO QUE COSTABA ANTES
+ *
+ * Medido con Lighthouse en celular, el home gastaba 13,8 s de hilo principal
+ * contra 2,4 s de /busqueda, que carga el mismo React y encima suma Leaflet y 22
+ * fichas. El JavaScript apenas crecía 4x, pero el PINTADO crecía 17x. Este
+ * componente era el principal responsable, por tres motivos:
+ *
+ *  1. El bucle de `requestAnimationFrame` no paraba NUNCA. Seguía dibujando 6
+ *     gradientes radiales por frame con la sección fuera de pantalla, mientras
+ *     la persona miraba cualquier otra parte de la página.
+ *  2. El canvas lleva `filter: blur(50px)` encima. Un desenfoque de radio grande
+ *     es de lo más caro que hay, y había que rehacerlo en CADA frame porque el
+ *     canvas cambiaba en cada frame.
+ *  3. No miraba `prefers-reduced-motion`.
+ *
+ * ---
+ * QUÉ HACE AHORA
+ *
+ * En modo liviano —celulares, aparatos de pocos núcleos, o quien pidió menos
+ * movimiento— dibuja UN SOLO fotograma y no vuelve a tocar el canvas.
+ *
+ * Eso es lo importante del arreglo y conviene entender por qué: el desenfoque NO
+ * es caro por ser grande, es caro por tener que rehacerse cuando el contenido
+ * cambia. Con el canvas quieto, el navegador lo rasteriza una vez y después lo
+ * reusa. Así que el fondo se ve EXACTAMENTE IGUAL que antes, con blur y todo, y
+ * el costo continuo pasa a ser cero. No hizo falta afear nada para que rinda.
+ *
+ * En aparatos con potencia sigue animándose, pero ahora se pausa cuando la
+ * sección no está en pantalla.
+ */
+export function BubbleBackground({ interactive = true, liviano = false, className = "", ...props }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -114,18 +148,74 @@ export function BubbleBackground({ interactive = true, className = "", ...props 
     };
     init();
 
-    const animate = () => {
+    /** Un pasada de dibujo. Con `mover` en false, los orbes quedan donde están. */
+    const dibujar = (mover) => {
       // Fondo base aclarado (un tono Slate/Azul marino translúcido que permite ver el fondo CSS)
       ctx.fillStyle = 'rgba(15, 23, 42, 0.35)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       orbs.forEach((orb) => {
-        orb.update();
+        if (mover) orb.update();
         orb.draw();
       });
+    };
+
+    // ---- MODO LIVIANO: un fotograma y listo ----
+    if (liviano) {
+      // Varias pasadas sin mover para que el fondo translúcido se acumule y
+      // quede con la misma densidad que tiene el animado después de un rato. Con
+      // una sola pasada se ve más pálido que en escritorio.
+      for (let i = 0; i < 6; i++) dibujar(false);
+
+      // El único trabajo que queda es rehacer el fotograma si cambia el tamaño.
+      const alRedimensionar = () => {
+        resizeCanvas();
+        orbs.forEach((o) => o.reset());
+        for (let i = 0; i < 6; i++) dibujar(false);
+      };
+      window.removeEventListener('resize', resizeCanvas);
+      window.addEventListener('resize', alRedimensionar);
+      return () => window.removeEventListener('resize', alRedimensionar);
+    }
+
+    // ---- MODO COMPLETO: se anima, pero solo cuando se ve ----
+    let enPantalla = true;
+
+    const animate = () => {
+      dibujar(true);
       animationFrameId = requestAnimationFrame(animate);
     };
-    animate();
+
+    const arrancar = () => {
+      if (animationFrameId == null) animationFrameId = requestAnimationFrame(animate);
+    };
+    const frenar = () => {
+      if (animationFrameId != null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+    };
+
+    // Antes esto dibujaba para siempre, también con la sección fuera de la
+    // ventana. Ahora se corta apenas deja de verse y se retoma al volver.
+    const observador = new IntersectionObserver(
+      ([entrada]) => {
+        enPantalla = entrada.isIntersecting;
+        enPantalla && !document.hidden ? arrancar() : frenar();
+      },
+      { threshold: 0 }
+    );
+    observador.observe(canvas);
+
+    // Y tampoco tiene sentido dibujar con la pestaña en segundo plano. El
+    // navegador ya frena el rAF solo, pero esto lo deja explícito y cubre el
+    // caso de la ventana visible pero tapada.
+    const alCambiarVisibilidad = () => {
+      document.hidden || !enPantalla ? frenar() : arrancar();
+    };
+    document.addEventListener('visibilitychange', alCambiarVisibilidad);
+
+    arrancar();
 
     // Al escuchar sobre el contenedor padre real, capturamos el cursor pasando los pointer-events
     const handleMouseMove = (e) => {
@@ -153,14 +243,16 @@ export function BubbleBackground({ interactive = true, className = "", ...props 
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
-      cancelAnimationFrame(animationFrameId);
+      document.removeEventListener('visibilitychange', alCambiarVisibilidad);
+      observador.disconnect();
+      frenar();
       if (interactive && parent) {
         parent.removeEventListener('mousemove', handleMouseMove);
         parent.removeEventListener('mouseleave', handleMouseLeave);
         parent.removeEventListener('mouseenter', handleMouseMove);
       }
     };
-  }, [interactive]);
+  }, [interactive, liviano]);
 
   return (
     <canvas

@@ -12,12 +12,14 @@ import { RippleButton, RippleButtonRipples } from './RippleButton';
 // 1. IMPORTACIÓN DEL FONDO DESDE TU RUTA REAL
 import { BubbleBackground } from './bubble';
 import { etiquetaZona } from '../lib/format';
+import { useModoLiviano } from '../lib/capacidad';
 
 // 2. TU COMPONENTE EXACTO optimizado para desactivar interactividad si es móvil
-const BubbleBackgroundDemo = ({ interactive }) => {
+const BubbleBackgroundDemo = ({ interactive, liviano }) => {
   return (
     <BubbleBackground
       interactive={interactive}
+      liviano={liviano}
       className="absolute inset-0 flex items-center justify-center rounded-xl"
     />
   );
@@ -61,19 +63,22 @@ const ScrollReveal = ({ children, delay = "delay-0" }) => {
   );
 };
 
+/**
+ * El tamaño de la tarjeta, ahora en clases de CSS y no en un `style` calculado
+ * con `window.innerWidth`. El corte es el mismo de antes (640px = `sm` en
+ * Tailwind); lo que cambia es que ya no depende de un ancho leído en JavaScript,
+ * que en el servidor no existe.
+ */
+const CLASES_TARJETA = "w-[190px] h-[230px] sm:w-[290px] sm:h-[320px]";
+
 // TARJETA DE PROPIEDAD ESTILO BANNER 3D
-const ProductCard = ({ product, dimensions, index, totalItems }) => {
+const ProductCard = ({ product, radius, index, totalItems }) => {
   // `portadaDe` saltea los videos y cae a un placeholder que SI existe:
   // '/propiedades/unisex.jpg' nunca estuvo en el repo.
   const displayImage = portadaDe(product);
 
   const anglePerItem = 360 / totalItems;
   const currentAngle = anglePerItem * index;
-  
-  const radius = Math.max(
-    180, 
-    (parseInt(dimensions.width) / 2) / Math.tan((anglePerItem / 2) * Math.PI / 180) + 10
-  );
 
   const hasValidPrice = product.price !== undefined && product.price !== null && !isNaN(product.price) && product.price !== '';
   
@@ -84,11 +89,9 @@ const ProductCard = ({ product, dimensions, index, totalItems }) => {
   }
 
   return (
-    <div 
-      className="absolute inset-0 rounded-xl overflow-hidden shadow-xl select-none group bg-black/45 border border-white/10"
+    <div
+      className={`absolute inset-0 rounded-xl overflow-hidden shadow-xl select-none group bg-black/45 border border-white/10 ${CLASES_TARJETA}`}
       style={{
-        width: dimensions.width,
-        height: dimensions.height,
         transform: `rotateY(${currentAngle}deg) translateZ(${radius}px)`,
         transformStyle: "preserve-3d",
         willChange: "transform",
@@ -164,24 +167,37 @@ const Carrusel = ({ products: productsProp }) => {
   // fallback si la consulta a Supabase falla, hasta que se borre en la Fase 9.
   const products = productsProp ?? productsData ?? [];
   const [activeIndex, setActiveIndex] = useState(0);
-  const [width, setWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
+
+  // Modo liviano por capacidad real del aparato, no por ancho de pantalla.
+  // Ver `src/lib/capacidad.js`.
+  const liviano = useModoLiviano();
+
+  /**
+   * El ancho REAL de la tarjeta, medido del DOM.
+   *
+   * Acá había un `window.innerWidth` con el mismo problema que Hero y Navbar en
+   * la Parte 1: en el servidor valía 1200 fijo, así que el primer render siempre
+   * salía con medidas de escritorio.
+   *
+   * No alcanzaba con pasarlo a media queries, porque el radio del cilindro 3D es
+   * trigonometría y necesita el ancho como número. La salida es la misma que se
+   * usó para el alto del navbar: que el tamaño lo decida el CSS —`CLASES_TARJETA`—
+   * y que JavaScript lo MIDA en vez de adivinarlo. Así la cuenta usa siempre el
+   * valor verdadero, sin importar el ancho de la ventana ni el breakpoint.
+   */
+  const escenarioRef = useRef(null);
+  const [anchoTarjeta, setAnchoTarjeta] = useState(290);
 
   useEffect(() => {
-    let timeoutId;
-    const handleResize = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        setWidth(window.innerWidth);
-      }, 150);
-    };
-    window.addEventListener("resize", handleResize);
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      clearTimeout(timeoutId);
-    };
+    const nodo = escenarioRef.current;
+    if (!nodo) return;
+    const observador = new ResizeObserver(() => {
+      const w = nodo.getBoundingClientRect().width;
+      if (w > 0) setAnchoTarjeta(w);
+    });
+    observador.observe(nodo);
+    return () => observador.disconnect();
   }, []);
-
-  const isMobile = width < 640;
 
   // Este carrusel es el escaparate de la home y toma las ÚLTIMAS 7.
   //
@@ -210,10 +226,10 @@ const Carrusel = ({ products: productsProp }) => {
 
   const currentRotation = activeIndex * -anglePerItem;
 
-  const cardDimensions = {
-    width: isMobile ? "190px" : "290px",
-    height: isMobile ? "230px" : "320px"
-  };
+  // El radio del cilindro sale del ancho medido, no de un breakpoint adivinado.
+  const radio = totalItems > 0
+    ? Math.max(180, (anchoTarjeta / 2) / Math.tan((anglePerItem / 2) * Math.PI / 180) + 10)
+    : 180;
 
   // Sin disponibles no hay escaparate. Se devuelve `null` en vez de la sección
   // vacía: el título "Recomendaciones" sobre la nada queda peor que no estar.
@@ -228,7 +244,7 @@ const Carrusel = ({ products: productsProp }) => {
       }}
     >
       <div className="absolute inset-0 pointer-events-none z-0 opacity-70">
-        <BubbleBackgroundDemo interactive={!isMobile} />
+        <BubbleBackgroundDemo interactive={!liviano} liviano={liviano} />
       </div>
 
       {/* SECCIÓN TITULO */}
@@ -257,30 +273,26 @@ const Carrusel = ({ products: productsProp }) => {
       <ScrollReveal delay="delay-100">
         <div className="relative max-w-6xl mx-auto px-4 mt-20 flex flex-col items-center justify-center gap-8">
           
-          <div 
-            className="relative w-full flex items-center justify-center z-10"
-            style={{ 
-              perspective: isMobile ? "1000px" : "1400px",
-              perspectiveOrigin: "50% 35%",
-              height: isMobile ? "250px" : "360px"
-            }}
+          {/* La perspectiva y el alto del escenario también pasaron de `style`
+              calculado a clases, con el mismo corte de 640px que antes. */}
+          <div
+            className="relative w-full flex items-center justify-center z-10 h-[250px] sm:h-[360px] [perspective:1000px] sm:[perspective:1400px] [perspective-origin:50%_35%]"
           >
             {totalItems > 0 ? (
-              <div 
-                className="relative flex items-center justify-center transition-transform duration-500 ease-out select-none"
+              <div
+                ref={escenarioRef}
+                className={`relative flex items-center justify-center transition-transform duration-500 ease-out select-none ${CLASES_TARJETA}`}
                 style={{
-                  width: cardDimensions.width,
-                  height: cardDimensions.height,
                   transformStyle: "preserve-3d",
                   transform: `rotateY(${currentRotation}deg)`,
                   willChange: "transform"
                 }}
               >
                 {baseProducts.map((product, index) => (
-                  <ProductCard 
-                    key={`${product.id}-${index}`} 
-                    product={product} 
-                    dimensions={cardDimensions}
+                  <ProductCard
+                    key={`${product.id}-${index}`}
+                    product={product}
+                    radius={radio}
                     index={index}
                     totalItems={totalItems}
                   />
@@ -328,6 +340,22 @@ const Carrusel = ({ products: productsProp }) => {
         }
         .animate-gradient-slow {
           animation: gradientSlow 18s ease infinite;
+        }
+
+        /* Lighthouse marcaba esta animación como NO compuesta: animar
+           \`background-position\` es de las pocas cosas que el navegador no puede
+           delegar a la GPU, así que repinta la sección entera en cada frame,
+           para siempre, aunque no se esté mirando.
+
+           Se apaga con el dedo (\`pointer: coarse\` = celular o tablet) y con
+           quien pidió menos movimiento. El degradado queda igual, solo que
+           quieto: se pierde un movimiento que en un celular casi no se percibe
+           y se gana no repintar nunca más.
+
+           Va en CSS y no en JavaScript a propósito: el navegador lo resuelve
+           antes de pintar, sin depender de que hidrate nada. */
+        @media (pointer: coarse), (prefers-reduced-motion: reduce) {
+          .animate-gradient-slow { animation: none; }
         }
       `}</style>
     </div>
