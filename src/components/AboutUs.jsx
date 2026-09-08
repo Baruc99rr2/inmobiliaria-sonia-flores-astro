@@ -1,8 +1,31 @@
+import { useState } from 'react';
 import { FiCheckCircle, FiEye } from 'react-icons/fi';
+import { FaPlay } from 'react-icons/fa';
 // IMPORTACIÓN DEL VIDEO
 import videoPresentacion from '../assets/presentacion.mp4';
+import posterPresentacion from '../assets/presentacion-poster.webp';
+
+// Astro/Vite devuelven un objeto con `.src` para los assets importados, pero un
+// string pelado en algunos contextos. Mismo patrón que ya usa `Nosotros.jsx`.
+const videoUrl = videoPresentacion?.src || videoPresentacion;
+const posterUrl = posterPresentacion?.src || posterPresentacion;
 
 const AboutUs = () => {
+  /**
+   * El video NO se carga hasta que la persona lo toca.
+   *
+   * Antes tenía `autoPlay` y pesa 13,43 MB, así que empezaba a bajar a los 1,4
+   * segundos de abrir la home aunque estuviera abajo de todo y nadie lo hubiera
+   * pedido. Medido con Lighthouse en celular, el efecto colateral era peor que
+   * el peso en sí: saturaba la conexión y el video del Hero —el que es la
+   * primera impresión del sitio— no lograba ni empezar a bajar hasta los 7,45
+   * segundos, y seguía a los 11,8.
+   *
+   * Mientras tanto se muestra un fotograma del propio video como imagen (60 KB
+   * en WebP, sacado del segundo 20), así que la sección se ve igual que antes;
+   * lo único que cambia es que la reproducción arranca cuando la piden.
+   */
+  const [reproducir, setReproducir] = useState(false);
 
   // ==========================================
   // PARÁMETROS CONFIGURABLES DE DISEÑO
@@ -24,14 +47,44 @@ const AboutUs = () => {
       
       {/* 1. SECCIÓN IZQUIERDA: CONTENEDOR DEL VIDEO (VERTICAL CELULAR) */}
       <div className="relative w-full md:w-1/2 h-[70vh] md:h-[900px] overflow-hidden bg-gray-900">
-        <video
-          src={videoPresentacion}
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
-        />
+        {reproducir ? (
+          <video
+            src={videoUrl}
+            // `autoPlay` acá NO es carga automática: el elemento recién existe
+            // después del toque, así que arranca porque se lo pidieron.
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setReproducir(true)}
+            aria-label="Reproducir el video de la oficina"
+            className="group absolute inset-0 w-full h-full cursor-pointer"
+          >
+            <img
+              src={posterUrl}
+              alt="Interior de la oficina de Inmobiliaria Sonia Flores"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            {/* Suave a propósito: encima ya va el `bg-black/10` del contenedor,
+                y si se oscurece de más se nota un salto de brillo al tocar. */}
+            <span className="absolute inset-0 bg-black/25 transition-colors group-hover:bg-black/15" />
+            <span className="absolute inset-0 flex flex-col items-center justify-center gap-4 text-white">
+              <span className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-white/70 bg-black/40 backdrop-blur-sm transition-transform group-hover:scale-110 group-active:scale-95">
+                {/* Corrido un poco a la derecha: el triángulo se ve descentrado
+                    dentro del círculo si se lo deja en el centro exacto. */}
+                <FaPlay className="ml-1 text-2xl" />
+              </span>
+              <span className="text-sm font-medium tracking-wide drop-shadow-md">
+                Tocá para ver el video
+              </span>
+            </span>
+          </button>
+        )}
         <div className="absolute inset-0 bg-black/10 pointer-events-none" />
       </div>
 
