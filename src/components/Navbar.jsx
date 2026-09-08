@@ -1,56 +1,117 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BiMenu, BiX } from 'react-icons/bi';
 
 // IMPORTACIÓN DE LOS DOS LOGOS
-import SoniaLogo from '../assets/SoniaLogo.png';   
-import SoniaLogo2 from '../assets/SoniaLogo2.png'; 
+import SoniaLogo from '../assets/SoniaLogo.png';
+import SoniaLogo2 from '../assets/SoniaLogo2.png';
 
-const Navbar = () => {
+/**
+ * El corte entre el menú de escritorio y el de celular.
+ *
+ * Está acá y no en un `windowWidth < 1217` porque el ancho de la ventana no
+ * existe en el servidor: antes se arrancaba con 1200 fijo, así que el HTML que
+ * salía del servidor SIEMPRE traía el menú de escritorio y recién al hidratar
+ * React lo cambiaba por el hamburguesa. En un celular eso es un salto visible
+ * en cada carga. Ahora deciden las media queries de CSS, que el navegador aplica
+ * antes de pintar y sin JavaScript de por medio.
+ */
+const CORTE_ESCRITORIO = '(min-width: 1217px)';
+
+/** @param {{ pathname?: string }} props */
+const Navbar = ({ pathname = '' }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
-  const [windowWidth, setWindowWidth] = useState(
-    typeof window !== 'undefined' ? window.innerWidth : 1200
-  );
   const [activeMobileItem, setActiveMobileItem] = useState(null);
-  const [currentPath, setCurrentPath] = useState('');
+  const navRef = useRef(null);
+
+  // La ruta la manda `Layout.astro`, que la conoce en el servidor. Antes se leía
+  // en un efecto y arrancaba vacía, y como el vacío contaba como "home", toda
+  // página que no fuera la home pintaba el navbar transparente durante un frame
+  // y después saltaba a rojo.
+  const currentPath = pathname;
 
   // ==========================================
   // PARÁMETROS CONFIGURABLES DE DISEÑO
   // ==========================================
+  //
+  // Los tamaños pasaron de valores sueltos en `style` a clases de Tailwind con
+  // el prefijo `min-[1217px]:` para escritorio. Son los mismos números de antes;
+  // lo que cambia es QUIÉN elige entre celular y escritorio: ahora el CSS, y no
+  // un ancho de ventana leído en JavaScript que el servidor no puede conocer.
   const LOGO_SIZE = {
-    heightDesktop: "90px", 
-    heightMobile: "80px",
-    heightDesktopCompressed: "70px",
-    heightMobileCompressed: "50px"
+    expandido: "w-[180px] h-[80px] min-[1217px]:h-[90px]",   // 80px celular / 90px escritorio
+    comprimido: "w-[80px] h-[50px] min-[1217px]:h-[70px]",   // 50px celular / 70px escritorio
   };
 
+  // OJO: `py-1.3` NO es una clase válida de Tailwind y nunca generó CSS —
+  // comprobado midiendo el `padding-top` computado del navbar, que da 4px (o
+  // sea, el de celular) y no 5.2px. En la práctica el navbar comprimido de
+  // escritorio va sin padding vertical desde siempre.
+  //
+  // Se deja igual A PROPÓSITO: arreglarlo le sumaría 8px de alto al navbar de
+  // escritorio, que no es lo que pediste en esta tanda. Queda anotado para que
+  // lo decidas aparte. El `max-[1216px]:` es para que `py-1` siga aplicándose
+  // solo en celular, tal como estaba antes de unificar las dos ramas.
   const NAVBAR_PADDING = {
-    desktopExpanded: "py-3",  
-    mobileExpanded: "py-3",
-    desktopCompressed: "py-1.3", 
-    mobileCompressed: "py-1"
+    expandido: "py-3",
+    comprimido: "max-[1216px]:py-1 min-[1217px]:py-1.3",
   };
   // ==========================================
 
   useEffect(() => {
-    // Obtenemos la ruta actual al montar
-    setCurrentPath(window.location.pathname);
-
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
-    const handleResize = () => setWindowWidth(window.innerWidth);
-
     window.addEventListener("scroll", handleScroll);
-    window.addEventListener("resize", handleResize);
-    
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleResize);
-    };
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  /**
+   * Publica el alto real del navbar en `--navbar-h`.
+   *
+   * El navbar es `fixed`, así que no ocupa lugar en el flujo y el contenido de
+   * las páginas le arranca por debajo. En la home eso es a propósito —el navbar
+   * es transparente sobre el video—, pero en la ficha de propiedad el navbar es
+   * rojo opaco y le tapaba la parte de arriba a la foto de portada.
+   *
+   * Se mide en vez de escribir un número fijo porque el alto sale de
+   * `LOGO_SIZE` + `NAVBAR_PADDING`, que están pensados para tocarse a ojo. Con
+   * un `pt-[100px]` escrito a mano, la próxima vez que alguien agrande el logo
+   * el corte vuelve en silencio.
+   *
+   * SOLO se publica con la página arriba de todo. El navbar se achica ~20px al
+   * scrollear (logo de 90px a 70px), y si el padding siguiera ese cambio en
+   * vivo, la página entera se desplazaría hacia arriba mientras uno scrollea.
+   * Lo que hace falta es el alto expandido, que es el que tapa la portada.
+   */
+  useEffect(() => {
+    const nodo = navRef.current;
+    if (!nodo) return;
+
+    const publicar = () => {
+      // 50 es el mismo umbral que usa `handleScroll` para decidir si el navbar
+      // está comprimido.
+      if (window.scrollY > 50) return;
+      document.documentElement.style.setProperty(
+        '--navbar-h',
+        `${Math.round(nodo.getBoundingClientRect().height)}px`
+      );
+    };
+
+    publicar();
+    const observador = new ResizeObserver(publicar);
+    observador.observe(nodo);
+    return () => observador.disconnect();
+  }, []);
+
+  /**
+   * Si estamos en el menú hamburguesa. Se consulta en el momento del clic, no
+   * al renderizar: acá sí hay navegador y no hay riesgo de desajuste.
+   */
+  const enModoMovil = () => !window.matchMedia(CORTE_ESCRITORIO).matches;
 
   // Función para ir a Búsqueda con filtro de categoría (Venta / Alquiler)
   const navigateToSearch = (category = null, itemName = null) => {
-    if (isResponsiveMode && itemName) {
+    const esMovil = enModoMovil();
+    if (esMovil && itemName) {
       setActiveMobileItem(itemName);
     }
 
@@ -64,11 +125,12 @@ const Navbar = () => {
       } else {
         window.location.href = '/busqueda';
       }
-    }, isResponsiveMode && itemName ? 250 : 0);
+    }, esMovil && itemName ? 250 : 0);
   };
 
   const scrollToSection = (id, itemName = null) => {
-    if (isResponsiveMode && itemName) {
+    const esMovil = enModoMovil();
+    if (esMovil && itemName) {
       setActiveMobileItem(itemName);
     }
 
@@ -87,7 +149,7 @@ const Navbar = () => {
       } else {
         executeScroll(id);
       }
-    }, isResponsiveMode && itemName ? 250 : 0); 
+    }, esMovil && itemName ? 250 : 0);
   };
 
   const executeScroll = (id) => {
@@ -103,13 +165,15 @@ const Navbar = () => {
     }
   };
 
-  const isResponsiveMode = windowWidth < 1217;
-  const isHomePage = currentPath === '/' || currentPath === '';
+  // Sin el `|| currentPath === ''` de antes: si por lo que sea no llega la ruta,
+  // el valor seguro es NO ser la home. El navbar rojo se lee sobre cualquier
+  // fondo; el transparente sobre una página clara no se lee.
+  const isHomePage = currentPath === '/';
   const isTransparentActive = isHomePage && !isScrolled;
 
   const currentPadding = isTransparentActive
-    ? (isResponsiveMode ? NAVBAR_PADDING.mobileExpanded : NAVBAR_PADDING.desktopExpanded)
-    : (isResponsiveMode ? NAVBAR_PADDING.mobileCompressed : NAVBAR_PADDING.desktopCompressed);
+    ? NAVBAR_PADDING.expandido
+    : NAVBAR_PADDING.comprimido;
 
   const navbarClasses = isTransparentActive
     ? `bg-transparent ${currentPadding} text-white` 
@@ -125,18 +189,15 @@ const Navbar = () => {
   };
 
   const renderLogoContainer = () => {
-    let currentHeight = LOGO_SIZE.heightDesktop;
-    if (isResponsiveMode) {
-      currentHeight = isScrolled ? LOGO_SIZE.heightMobileCompressed : LOGO_SIZE.heightMobile;
-    } else {
-      currentHeight = isScrolled ? LOGO_SIZE.heightDesktopCompressed : LOGO_SIZE.heightDesktop;
-    }
+    // `isScrolled` sí puede decidirse en JavaScript sin desajuste: arranca en
+    // false tanto en el servidor como en el cliente, porque toda página se abre
+    // arriba de todo.
+    const tamañoLogo = isScrolled ? LOGO_SIZE.comprimido : LOGO_SIZE.expandido;
 
     return (
-      <div 
-        onClick={() => scrollToSection('home')} 
-        className="relative flex items-center justify-center cursor-pointer select-none transition-all duration-500 ease-in-out"
-        style={{ width: isScrolled ? "80px" : "180px", height: currentHeight }}
+      <div
+        onClick={() => scrollToSection('home')}
+        className={`relative flex items-center justify-center cursor-pointer select-none transition-all duration-500 ease-in-out ${tamañoLogo}`}
       >
         <img
           src={typeof SoniaLogo === 'string' ? SoniaLogo : SoniaLogo.src}
@@ -158,67 +219,66 @@ const Navbar = () => {
 
   return (
     <div>
-      <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ease-in-out ${navbarClasses} px-6 md:px-12 lg:px-16`}>
+      <nav ref={navRef} className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ease-in-out ${navbarClasses} px-6 md:px-12 lg:px-16`}>
+        {/* Una sola fila para los dos modos. El logo se renderiza UNA vez y las
+            listas de links aparecen o no según el ancho: en escritorio queda
+            [links] [logo] [links]; en celular, con las listas ocultas y el
+            hamburguesa visible, el mismo `justify-between` da [logo] [botón].
+            Antes había dos ramas de JSX excluyentes elegidas por `windowWidth`,
+            que es justo lo que producía el salto al hidratar. */}
         <div className="max-w-7xl mx-auto flex justify-between items-center w-full">
-          
-          {/* MODO DESKTOP */}
-          {!isResponsiveMode ? (
-            <div className="flex items-center justify-between w-full">
-              <ul className="flex items-center space-x-6 lg:space-x-8 w-1/2 justify-end pr-6 lg:pr-10">
-                <li onClick={() => navigateToSearch('Venta')} className={navLinkDesktopClass}>
-                  Ventas
-                </li>
-                <li onClick={() => navigateToSearch('Alquiler')} className={navLinkDesktopClass}>
-                  Alquiler
-                </li>
-                <li onClick={() => navigateToSearch(null)} className={navLinkDesktopClass}>
-                  Búsqueda
-                </li>
-              </ul>
 
-              {renderLogoContainer()}
+          <ul className="hidden min-[1217px]:flex items-center space-x-6 lg:space-x-8 w-1/2 justify-end pr-6 lg:pr-10">
+            <li onClick={() => navigateToSearch('Venta')} className={navLinkDesktopClass}>
+              Ventas
+            </li>
+            <li onClick={() => navigateToSearch('Alquiler')} className={navLinkDesktopClass}>
+              Alquiler
+            </li>
+            <li onClick={() => navigateToSearch(null)} className={navLinkDesktopClass}>
+              Búsqueda
+            </li>
+          </ul>
 
-              <ul className="flex items-center space-x-6 lg:space-x-8 w-1/2 justify-start pl-6 lg:pl-10">
-                <li onClick={() => scrollToSection('about-section')} className={navLinkDesktopClass}>
-                  Sobre Nosotros
-                </li>
-                <li onClick={() => scrollToSection('services')} className={navLinkDesktopClass}>
-                  Nuestros Servicios
-                </li>
-                <li onClick={() => scrollToSection('contact')} className={navLinkDesktopClass}>
-                  Contacto
-                </li>
-              </ul>
-            </div>
-          ) : (
-            // MODO MÓVIL
-            <div className="flex justify-between items-center w-full">
-              {renderLogoContainer()}
-              <button 
-                className="text-3xl focus:outline-none transition-transform duration-200 active:scale-95 text-white" 
-                onClick={() => setIsOpen(!isOpen)}
-              >
-                {isOpen ? <BiX /> : <BiMenu />}
-              </button>
-            </div>
-          )}
+          {renderLogoContainer()}
+
+          <ul className="hidden min-[1217px]:flex items-center space-x-6 lg:space-x-8 w-1/2 justify-start pl-6 lg:pl-10">
+            <li onClick={() => scrollToSection('about-section')} className={navLinkDesktopClass}>
+              Sobre Mí
+            </li>
+            <li onClick={() => scrollToSection('services')} className={navLinkDesktopClass}>
+              Nuestros Servicios
+            </li>
+            <li onClick={() => scrollToSection('contact')} className={navLinkDesktopClass}>
+              Contacto
+            </li>
+          </ul>
+
+          {/* Botón hamburguesa: solo por debajo del corte. */}
+          <button
+            type="button"
+            aria-label={isOpen ? 'Cerrar el menú' : 'Abrir el menú'}
+            aria-expanded={isOpen}
+            className="min-[1217px]:hidden text-3xl focus:outline-none transition-transform duration-200 active:scale-95 text-white"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            {isOpen ? <BiX /> : <BiMenu />}
+          </button>
 
           {/* MENÚ MÓVIL */}
-          {isResponsiveMode && (
-            <div className={`absolute top-full left-0 w-full bg-[#d64531] shadow-2xl transition-all duration-300 flex flex-col items-center space-y-6 py-8 border-t border-white/10 ${
-              isOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2 pointer-events-none"
-            }`}>
-              <div className="flex flex-col items-center gap-5 w-auto">
-                <span onClick={() => scrollToSection('home', 'inicio')} className={navLinkMobileClass('inicio')}>Inicio</span>
-                <span onClick={() => navigateToSearch('Venta', 'ventas')} className={navLinkMobileClass('ventas')}>Ventas</span>
-                <span onClick={() => navigateToSearch('Alquiler', 'alquiler')} className={navLinkMobileClass('alquiler')}>Alquiler</span>
-                <span onClick={() => navigateToSearch(null, 'busqueda')} className={navLinkMobileClass('busqueda')}>Búsqueda</span>
-                <span onClick={() => scrollToSection('about-section', 'about')} className={navLinkMobileClass('about')}>Sobre Nosotros</span>
-                <span onClick={() => scrollToSection('services', 'services')} className={navLinkMobileClass('services')}>Nuestros Servicios</span>
-                <span onClick={() => scrollToSection('contact', 'contact')} className={navLinkMobileClass('contact')}>Contacto</span>
-              </div>
+          <div className={`min-[1217px]:hidden absolute top-full left-0 w-full bg-[#d64531] shadow-2xl transition-all duration-300 flex flex-col items-center space-y-6 py-8 border-t border-white/10 ${
+            isOpen ? "opacity-100 visible translate-y-0" : "opacity-0 invisible -translate-y-2 pointer-events-none"
+          }`}>
+            <div className="flex flex-col items-center gap-5 w-auto">
+              <span onClick={() => scrollToSection('home', 'inicio')} className={navLinkMobileClass('inicio')}>Inicio</span>
+              <span onClick={() => navigateToSearch('Venta', 'ventas')} className={navLinkMobileClass('ventas')}>Ventas</span>
+              <span onClick={() => navigateToSearch('Alquiler', 'alquiler')} className={navLinkMobileClass('alquiler')}>Alquiler</span>
+              <span onClick={() => navigateToSearch(null, 'busqueda')} className={navLinkMobileClass('busqueda')}>Búsqueda</span>
+              <span onClick={() => scrollToSection('about-section', 'about')} className={navLinkMobileClass('about')}>Sobre Mí</span>
+              <span onClick={() => scrollToSection('services', 'services')} className={navLinkMobileClass('services')}>Nuestros Servicios</span>
+              <span onClick={() => scrollToSection('contact', 'contact')} className={navLinkMobileClass('contact')}>Contacto</span>
             </div>
-          )}
+          </div>
 
         </div>
       </nav>

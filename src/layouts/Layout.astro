@@ -67,8 +67,12 @@ const fullImageUrl = image.startsWith('http') ? image : new URL(image, canonical
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap" rel="stylesheet" />
   </head>
   <body class="bg-[#eeecec] font-sans antialiased">
-    <!-- Navbar siempre presente -->
-    <Navbar client:load />
+    <!-- Navbar siempre presente.
+         `pathname` va como prop y no se lee con `window.location` adentro del
+         componente: el servidor la conoce, así que el navbar sale del servidor
+         ya sabiendo si está en la home. Sin esto arrancaba transparente en TODA
+         página y saltaba a rojo al hidratar. -->
+    <Navbar client:load pathname={Astro.url.pathname} />
 
     <!-- Contenido de cada página -->
     <main>

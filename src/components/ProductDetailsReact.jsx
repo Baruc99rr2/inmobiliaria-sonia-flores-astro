@@ -124,7 +124,22 @@ const ProductDetailsReact = ({ product, currentUrl, configuracion }) => {
     const hasValidPrice = product.price !== undefined && product.price !== null && !isNaN(product.price) && product.price !== '';
 
     return (
-        <div className='flex flex-col min-h-screen bg-gray-50 w-full overflow-x-hidden'>
+        // El `pt-[var(--navbar-h,...)]` corre la ficha por debajo del navbar.
+        //
+        // El navbar es `fixed`, así que no ocupa lugar en el flujo: sin este
+        // espacio, la foto de portada arrancaba en y=0 y el navbar —que en la
+        // ficha es rojo OPACO, no transparente como en la home— le tapaba los
+        // primeros ~100px.
+        //
+        // El valor lo mide y publica el propio navbar (ver `Navbar.jsx`), así que
+        // sigue cualquier cambio de `LOGO_SIZE` sin que haya que acordarse de
+        // tocar acá. Los números del fallback son el alto expandido medido hoy
+        // (89px en celular, 91px en escritorio) y solo se usan en el instante
+        // previo a que hidrate el navbar.
+        //
+        // Los dos modos de pantalla completa son `fixed inset-0`, o sea que están
+        // fuera del flujo y este padding no los toca.
+        <div className='flex flex-col min-h-screen bg-gray-50 w-full overflow-x-hidden pt-[var(--navbar-h,89px)] min-[1217px]:pt-[var(--navbar-h,91px)]'>
             {/* Hero Image / Video Carrusel */}
             <div className='w-full relative bg-black h-[40vh] md:h-[65vh] cursor-pointer overflow-hidden' onClick={() => setIsFullscreen(true)}>
                 <div className="flex w-full h-full transition-transform duration-500 ease-out" style={{ transform: `translateX(-${currentImgIndex * 100}%)` }}>
