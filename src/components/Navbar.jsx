@@ -43,18 +43,18 @@ const Navbar = ({ pathname = '' }) => {
     comprimido: "w-[80px] h-[50px] min-[1217px]:h-[70px]",   // 50px celular / 70px escritorio
   };
 
-  // OJO: `py-1.3` NO es una clase válida de Tailwind y nunca generó CSS —
-  // comprobado midiendo el `padding-top` computado del navbar, que da 4px (o
-  // sea, el de celular) y no 5.2px. En la práctica el navbar comprimido de
-  // escritorio va sin padding vertical desde siempre.
+  // El escritorio comprimido va SIN padding vertical, y es a propósito.
   //
-  // Se deja igual A PROPÓSITO: arreglarlo le sumaría 8px de alto al navbar de
-  // escritorio, que no es lo que pediste en esta tanda. Queda anotado para que
-  // lo decidas aparte. El `max-[1216px]:` es para que `py-1` siga aplicándose
-  // solo en celular, tal como estaba antes de unificar las dos ramas.
+  // Acá había un `py-1.3`, que no es una clase válida de Tailwind y nunca generó
+  // CSS: o sea que el navbar de escritorio venía sin padding desde siempre, solo
+  // que por accidente. Comparando las dos versiones en pantalla, el logo trae su
+  // propio margen dentro del PNG y queda equilibrado sin agregar nada (~10px de
+  // rojo arriba y ~12px abajo); con 6px el navbar crece 12px y no se ve mejor.
+  // Así que se saca la clase rota y el cero queda escrito de forma explícita, en
+  // vez de depender de que una clase no exista.
   const NAVBAR_PADDING = {
     expandido: "py-3",
-    comprimido: "max-[1216px]:py-1 min-[1217px]:py-1.3",
+    comprimido: "py-1 min-[1217px]:py-0",
   };
   // ==========================================
 
