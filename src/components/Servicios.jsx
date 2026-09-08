@@ -40,29 +40,40 @@ const Servicios = () => {
     }
   ];
 
-  // Cálculo matemático para generar el array de bloques vacíos del fondo dinámicamente
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  const currentConfig = isMobile ? GRID_CONFIG.mobile : GRID_CONFIG.desktop;
-  const totalTiles = currentConfig.columns * currentConfig.rows;
-  const tilesArray = Array.from({ length: totalTiles });
+  /**
+   * El fondo de azulejos, uno por cada tamaño de pantalla.
+   *
+   * Antes había un solo grid y la cantidad de azulejos salía de
+   * `window.innerWidth < 768` calculado DURANTE el render. Es el mismo bug que
+   * Hero, Navbar y Carrusel, pero acá era peor: no cambiaba una clase, cambiaba
+   * la CANTIDAD de nodos (32 en el servidor, 16 en un celular). React no puede
+   * reconciliar eso y tiraba el error de hidratación #418, comprobado en
+   * consola. Era el único que quedaba en la home.
+   *
+   * Se dibujan los dos y elige el CSS. Son 48 divs vacíos en vez de 32, que al
+   * lado de romper la hidratación no es nada.
+   */
+  const azulejos = (config, clases) => (
+    <div
+      className={`absolute inset-0 grid gap-[2px] bg-black/15 pointer-events-none ${clases}`}
+      style={{
+        gridTemplateColumns: `repeat(${config.columns}, minmax(0, 1fr))`,
+        gridTemplateRows: `repeat(${config.rows}, minmax(0, 1fr))`
+      }}
+      aria-hidden="true"
+    >
+      {Array.from({ length: config.columns * config.rows }).map((_, index) => (
+        <div key={`tile-${index}`} className="bg-[#d64531] w-full h-full" />
+      ))}
+    </div>
+  );
 
   return (
     <div id="services" className="relative w-full py-24 px-4 sm:px-6 md:px-12 lg:px-24 overflow-hidden bg-[#d64531]">
-      
-      {/* FONDO SUBDIVIDIDO TOTALMENTE DINÁMICO */}
-      <div 
-        className="absolute inset-0 gap-[2px] bg-black/15 pointer-events-none"
-        style={{
-          display: 'grid',
-          // Seteamos las columnas y filas usando las variables configuradas arriba
-          gridTemplateColumns: `repeat(${currentConfig.columns}, minmax(0, 1fr))`,
-          gridTemplateRows: `repeat(${currentConfig.rows}, minmax(0, 1fr))`
-        }}
-      >
-        {tilesArray.map((_, index) => (
-          <div key={`tile-${index}`} className="bg-[#d64531] w-full h-full" />
-        ))}
-      </div>
+
+      {/* FONDO SUBDIVIDIDO. El corte es el mismo de antes: 768px = `md`. */}
+      {azulejos(GRID_CONFIG.mobile, 'md:hidden')}
+      {azulejos(GRID_CONFIG.desktop, 'hidden md:grid')}
 
       {/* CAPA DE TEXTURA RUGOSA (Mantiene el efecto áspero de la terracota) */}
       <div className="absolute inset-0 opacity-[0.14] pointer-events-none mix-blend-overlay">
